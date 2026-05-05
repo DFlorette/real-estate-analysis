@@ -7,9 +7,9 @@ Exploratory analysis of the French real estate market using official DVF
 
 ## Key Findings
 
-- **Median price/m²** : €3,443 nationally (core market)
-- **Most expensive city** : Neuilly-sur-Seine at €8,667/m²
-- **Most expensive department** : Paris (75) at €8,158/m²
+- **Median price/m²** : 3,443 € nationally (core market)
+- **Most expensive city** : Neuilly-sur-Seine at 8,667 €/m²
+- **Most expensive department** : Paris (75) at 8,158 €/m²
 - **Top city by volume** : Nice with 7,818 transactions
 - **Primary price driver** : built area (Spearman r=0.63), ahead of location
 - **Seasonality** : volume varies up to 80% across months — prices remain stable (~10%)
