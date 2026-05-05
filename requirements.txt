@@ -1,0 +1,9 @@
+pandas
+numpy
+requests
+matplotlib
+seaborn
+scikit-learn
+fastapi
+uvicorn
+pyyaml

@@ -1,8 +1,6 @@
 # Data
-data/raw/
-data/clean/
-*.txt
-*.parquet
+data/**
+!data/README.md
 
 # Environnements
 .env
