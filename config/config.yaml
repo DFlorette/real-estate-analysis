@@ -1,7 +1,5 @@
 paths:
-  raw_data: data/raw/dvf.csv
-  processed_data: data/processed/dvf_clean.csv
+  raw_data: data/raw/ValeursFoncieres-2025.txt
+  processed_data: data/processed/dvf_core.parquet
 
 params:
-  min_surface: 10
-  min_price: 1000
