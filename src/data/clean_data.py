@@ -1,132 +1,74 @@
 import numpy as np
 import pandas as pd
 
-def clean_dvf(df):
+
+def clean_dvf(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
     ##
     # PARSING
     ##
     # Category
-    df["Nature mutation"] = (
-        df["Nature mutation"].astype(str).str.strip().astype("category")
-    )
+    for col in ["Nature mutation", "Commune", "Type local"]:
+        df = clean_str_col(df, col, to_category=True)
 
-    df["Commune"] = (
-        df["Commune"].astype(str).str.strip().astype("category")
+    # Number
+    df["Valeur fonciere"] = pd.to_numeric(
+        df["Valeur fonciere"].astype(str).str.replace(",", ".", regex=False),
+        errors="coerce"
     )
-
-    df["Type local"] = (
-        df["Type local"].astype(str).str.strip().astype("category")
-    )
-
-    # Int
-    df["Valeur fonciere"] = (
-        df["Valeur fonciere"].astype("str").str.replace(",", ".", regex=False)
-    )
-    df["Valeur fonciere"] = pd.to_numeric(df["Valeur fonciere"], errors="coerce")
 
     # Str
-    df["Type de voie"] = (
-        df["Type de voie"].astype(str).str.strip().astype("str")
-    )
-
-    df["Code voie"] = (
-        df["Code voie"].astype(str).str.strip().astype("str")
-    )
-
-    df["Voie"] = (
-        df["Voie"].astype(str).str.strip().astype("str")
-    )
-
-    df["Code postal"] = (
-        df["Code postal"].astype(str).str.strip().astype("str")
-    )
-
-    df["Code departement"] = (
-        df["Code departement"].astype(str).str.strip().astype("str")
-    )
-
-    df["Section"] = (
-        df["Section"].astype(str).str.strip().astype("str")
-    )
-
-    df["Nature culture"] = (
-        df["Nature culture"].astype(str).str.strip().astype("str")
-    )
-
-    df["Nature culture speciale"] = (
-        df["Nature culture speciale"].astype(str).str.strip().astype("str")
-    )
+    for col in ["Type de voie", "Code voie", "Voie", "Code postal",
+                "Code departement", "Section",
+                "Nature culture", "Nature culture speciale"]:
+        df = clean_str_col(df, col)
 
     # Date
     df["Date mutation"] = pd.to_datetime(df["Date mutation"], format="%d/%m/%Y")
 
     ##
-    # HANDLE NA VALUES
+    # FILTER : bâti only (exclude agricultural land)
     ##
-    df = df.dropna(subset=["Valeur fonciere"])
-    df = df.dropna(subset=["Surface reelle bati"])
-    df = df[df["Surface reelle bati"] != 0]
-    df = df.dropna(subset=["Code postal"])
+    for col in ["Nature culture", "Nature culture speciale"]:
+        if col in df.columns:
+            df = df[df[col].fillna("") == ""]
+            df = df.drop(columns=[col])
+
+    if "Surface terrain" in df.columns:
+        df = df.drop(columns=["Surface terrain"])
 
     ##
-    # CLEAN CATEGORY
+    # HANDLE MISSING / CRITICAL VALUES
     ##
-    df["Type local"] = df["Type local"].cat.remove_unused_categories()
-    df["Commune"] = df["Commune"].cat.remove_unused_categories()
-
-    ##
-    # FILTER
-    ##
-    df = df[
-        df["Nature culture"].isna() |
-        (df["Nature culture"].astype(str).str.strip() == "")
-        ]
-
-    df = df[
-        df["Nature culture speciale"].isna() |
-        (df["Nature culture speciale"].astype(str).str.strip() == "")
-        ]
-
-    df.drop(labels=["Nature culture", "Nature culture speciale", "Surface terrain"], axis="columns", inplace=True)
-
-    ##
-    # ANOMALIES
-    ##
-    df = df[
-        df["Valeur fonciere"].notna() &
-        (df["Valeur fonciere"] >= 1)
-        ]
-
+    df = df.dropna(subset=["Valeur fonciere", "Code postal"])
     df = df[
         df["Surface reelle bati"].notna() &
         (df["Surface reelle bati"] >= 1)
         ]
+    df = df[df["Valeur fonciere"] >= 1]
 
     ##
+    # ENGINEERED FEATURE
     # NEW VARIABLE
     ##
-    df["prix_m2"] = df["Valeur fonciere"] / df["Surface reelle bati"]
-    df["prix_m2"] = df["prix_m2"].replace(
+    df["prix_m2"] = (df["Valeur fonciere"] / df["Surface reelle bati"]).replace(
         [np.inf, -np.inf],
         np.nan
     )
-    df = df[
-        (df["prix_m2"] > df["prix_m2"].quantile(0.01)) &
-        (df["prix_m2"] < df["prix_m2"].quantile(0.99))
-        ]
-
     df = df.dropna(subset=["prix_m2"])
 
     ##
-    # HANDLE OUTLIERS
-    # CORE MARKET
+    # CLEAN UP CATEGORY
     ##
-    q10 = df["prix_m2"].quantile(0.1)
-    q90 = df["prix_m2"].quantile(0.9)
+    for col in ["Type local", "Commune"]:
+        df[col] = df[col].cat.remove_unused_categories()
 
-    df_core = df[
-        (df["prix_m2"] >= q10) &
-        (df["prix_m2"] <= q90)
-        ]
+    return df
 
+
+def clean_str_col(df: pd.DataFrame, col: str, to_category: bool = False) -> pd.DataFrame:
+    df[col] = df[col].astype("string").str.strip()
+    if to_category:
+        df[col] = df[col].astype("category")
     return df
