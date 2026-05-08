@@ -8,3 +8,4 @@ fastapi
 uvicorn
 pyyaml
 pydantic
+django-ratelimit2
