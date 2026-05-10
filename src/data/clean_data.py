@@ -69,6 +69,7 @@ def clean_dvf(df: pd.DataFrame) -> pd.DataFrame:
 
 def clean_str_col(df: pd.DataFrame, col: str, to_category: bool = False) -> pd.DataFrame:
     df[col] = df[col].astype("string").str.strip()
+    df[col].fillna("").astype(str)
     if to_category:
         df[col] = df[col].astype("category")
     return df
