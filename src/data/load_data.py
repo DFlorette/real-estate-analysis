@@ -58,7 +58,7 @@ app_co_dtype_map = {
 }
 
 
-def load_appartenance_commune(file_path) -> pd.DataFrame:
+def load_appartenance_commune(file_path):
     return pd.read_excel(file_path, engine="calamine", header=5, usecols=app_co_cols, dtype=app_co_dtype_map)
 
 
@@ -88,7 +88,7 @@ na_values = [
 ]
 
 
-def load_stats_commune(file_path) -> pd.DataFrame:
+def load_stats_commune(file_path):
     return pd.read_csv(file_path, sep=";", header=2, usecols=stats_co_cols, dtype=str, na_values=na_values)
 
 
@@ -100,8 +100,8 @@ stats_intercommunes_cols = [
 ]
 
 
-def load_stats_intercommunes(filepath) -> pd.DataFrame:
-    return pd.read_csv(filepath, sep=";", usecols=stats_intercommunes_cols, dtype=str, na_values=na_values)
+def load_stats_intercommunes(filepath):
+    return pd.read_csv(filepath, sep=";", header=2, usecols=stats_intercommunes_cols, dtype=str, na_values=na_values)
 
 
 stats_chomage_cols = [
@@ -111,5 +111,5 @@ stats_chomage_cols = [
 ]
 
 
-def load_stats_chomage(file_path) -> pd.DataFrame:
-    return pd.read_csv(file_path, sep=";", usecols=stats_chomage_cols, dtype=str, na_values=na_values)
+def load_stats_chomage(file_path):
+    return pd.read_csv(file_path, sep=";", header=2, usecols=stats_chomage_cols, dtype=str, na_values=na_values)

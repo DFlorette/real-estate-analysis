@@ -139,7 +139,7 @@ def clean_stats_commune(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def clean_stats_intercommune(df: pd.DataFrame) -> pd.DataFrame:
+def clean_stats_intercommunes(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     df = df.rename(columns={"Code": "EPCI"})

@@ -5,7 +5,7 @@ from src.data.enrich_data import enrich_with_stats
 from src.data.geocoder import enrich_with_coordinates
 from src.data.load_data import load_dvf, load_appartenance_commune, load_stats_commune, load_stats_intercommunes, \
     load_stats_chomage
-from src.data.clean_data import clean_dvf, clean_appartenance_commune, clean_stats_commune, clean_stats_intercommune, \
+from src.data.clean_data import clean_dvf, clean_appartenance_commune, clean_stats_commune, clean_stats_intercommunes, \
     clean_stats_chomage
 from src.analysis.metrics import get_core_market
 
@@ -31,7 +31,7 @@ else:
     df_dvf = clean_dvf(df_dvf)
     df_app_co = clean_appartenance_commune(df_app_co)
     df_stats_commune = clean_stats_commune(df_stats_commune)
-    df_stats_intercommunes = clean_stats_intercommune(df_stats_intercommunes)
+    df_stats_intercommunes = clean_stats_intercommunes(df_stats_intercommunes)
     df_stats_cho = clean_stats_chomage(df_stats_cho)
 
     df_dvf.to_parquet(config["paths"]["clean_data"], index=False)
@@ -46,7 +46,7 @@ else:
 
     # Enrichment
     print("Geocoding...")
-    df_dvf = enrich_with_coordinates(df_dvf)
+    df_dvf = enrich_with_coordinates(df_dvf_core)
 
     print("Enriching...")
     df_dvf = enrich_with_stats(
@@ -58,7 +58,7 @@ else:
     )
 
     # Save
-    df_dvf_core.to_parquet(config["paths"]["processed_data"], index=False)
+    df_dvf.to_parquet(config["paths"]["processed_data"], index=False)
 
     print("Pipeline executed successfully")
-    print(f"{len(df_dvf_core):,} rows saved to {processed_path}")
+    print(f"{len(df_dvf):,} rows saved to {processed_path}")
