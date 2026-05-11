@@ -10,29 +10,19 @@ PROCESSED_DIR = BASE_DIR / "data" / "processed"
 # LOADERS
 ###
 def load_appartenance_commune(path: str) -> pd.DataFrame:
-    df = pd.read_parquet(path)
-    df["CODGEO"] = df["CODGEO"].astype(str).str.zfill(5)
-    df["ZE2020"] = df["ZE2020"].astype(str).str.zfill(4)
-    df["EPCI"] = df["EPCI"].astype(str)
-    return df
+    return pd.read_parquet(path)
 
 
 def load_stats_commune(path: str) -> pd.DataFrame:
-    df = pd.read_parquet(path)
-    df["CODGEO"] = df["CODGEO"].astype(str).str.zfill(5)
-    return df
+    return pd.read_parquet(path)
 
 
 def load_stats_chomage(path: str) -> pd.DataFrame:
-    df = pd.read_parquet(path)
-    df["ZE2020"] = df["ZE2020"].astype(str).str.zfill(4)
-    return df.drop(columns=["Libellé"], errors="ignore")
+    return pd.read_parquet(path).drop(columns=["Libellé"], errors="ignore")
 
 
 def load_stats_intercommunes(path: str) -> pd.DataFrame:
-    df = pd.read_parquet(path)
-    df["EPCI"] = df["EPCI"].astype(str)
-    return df.drop(columns=["Libellé"], errors="ignore")
+    return pd.read_parquet(path).drop(columns=["Libellé"], errors="ignore")
 
 
 ###
@@ -57,10 +47,9 @@ def build_ref_commune(
     # Stats_Communes + Appartenance_Commune
     ref = stats_communes.merge(
         appartenance,
-        left_on="CODGEO",
-        right_on="CODGEO",
+        on="CODGEO",
         how="left",
-    ).drop(columns=["Libellé"], errors="ignore")
+    )
 
     unmatched = ref["ZE2020"].isna().sum()
     print(f"  Stats_Communes ← Appartenance : {unmatched:,} unmatched communes")
@@ -68,10 +57,9 @@ def build_ref_commune(
     # Add Stats_Chomage
     ref = ref.merge(
         stats_chomage,
-        left_on="ZE2020",
-        right_on="ZE2020",
+        on="ZE2020",
         how="left",
-    ).drop(columns=["ZE2020"], errors="ignore")
+    )
 
     unmatched = ref["Taux de chômage trimestriel 2025-T4"].isna().sum()
     print(f"  ref ← Stats_Chomage : {unmatched:,} unmatched communes")
@@ -79,10 +67,9 @@ def build_ref_commune(
     # Add Stats_Intercommunes
     ref = ref.merge(
         stats_intercommunes,
-        left_on="EPCI",
-        right_on="EPCI",
+        on="EPCI",
         how="left",
-    ).drop(columns=["EPCI"], errors="ignore")
+    )
 
     unmatched = ref["Taux de pauvreté 2023"].isna().sum()
     print(f"  ref ← Stats_Intercommunes : {unmatched:,} unmatched communes")
@@ -91,7 +78,7 @@ def build_ref_commune(
 
 
 ###
-# ENRICH DVF
+# BUILD GEO CODE
 ###
 def build_geo_code(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -104,6 +91,9 @@ def build_geo_code(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+###
+# ENRICH DVF
+###
 def enrich_with_stats(
         dvf: pd.DataFrame,
         appartenance_path: str,
@@ -133,12 +123,13 @@ def enrich_with_stats(
     print("Joining DVF ← ref_commune...")
     dvf = build_geo_code(dvf)
 
+    ref_cols_do_drop = ["LIBGEO", "DEP", "REG"]
+
     dvf = dvf.merge(
-        ref,
-        left_on="CODGEO",
-        right_on="CODGEO",
+        ref.drop(columns=ref_cols_do_drop, errors="ignore"),
+        on="CODGEO",
         how="left",
-    ).drop(columns=["CODGEO", "CODGEO", "CODGEO", "LIBGEO", "DEP", "REG"], errors="ignore")
+    ).drop(columns=["CODGEO"], errors="ignore")
 
     unmatched = dvf["Médiane du niveau de vie 2023"].isna().sum()
     print(f"  DVF ← ref_commune : {unmatched:,} unmatched transactions ({unmatched / len(dvf):.1%})")
