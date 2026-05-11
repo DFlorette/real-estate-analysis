@@ -1,100 +1,146 @@
-import time
-from pathlib import Path
 import pandas as pd
-from ratelimit import limits, sleep_and_retry
-import requests
-import json
+from pathlib import Path
 
-CALLS = 5
-PERIOD = 1
-
-CACHE_PATH = Path("data/cache/geocode_cache.json")
-
-if CACHE_PATH.exists():
-    with open(CACHE_PATH, "r", encoding="utf-8") as f:
-        cache = json.load(f)
-else:
-    cache = {}
+BASE_DIR = Path(__file__).resolve().parents[2]
+CLEAN_DIR = BASE_DIR / "data" / "clean"
+PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 
-def save_cache():
-    CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(CACHE_PATH, "w", encoding="utf-8") as f:
-        json.dump(cache, f)
-
-
-@sleep_and_retry
-@limits(calls=CALLS, period=PERIOD)
-def geocode_address(address, retries=3):
-    if not address or "<NA>" in address:
-        return None
-
-    if address in cache:
-        return cache[address]
-
-    url = "https://data.geopf.fr/geocodage/search"
-    params = {"q": address, "limit": 1}
-
-    for attempt in range(retries):
-        try:
-            response = requests.get(url, params=params, timeout=10)
-
-            response.raise_for_status()
-
-            data = response.json()
-
-            if data.get("features"):
-                coords = data["features"][0]["geometry"]["coordinates"]
-                cache[address] = coords
-                return coords
-        except requests.RequestException as e:
-            print(
-                f"[{attempt+1}/{retries}]"
-                f"Geocoding error for {address}: {e}"
-            )
-            time.sleep(1)
-
-    return None
-
-
-def build_address(row):
-    return (
-        f"{row["Code postal"]} "
-        f"{row["Commune"]}"
-    )
-
-
-def enrich_with_coordinates(df):
-    df["city_address"] = df.apply(build_address, axis=1)
-
-    unique_addresses = [
-        addr
-        for addr in df["city_address"].dropna().unique()
-        if addr not in cache
-    ]
-
-    geo_map = {}
-
-    for i, addr in enumerate(unique_addresses):
-        cache[addr] = geocode_address(addr)
-
-        if i % 100 == 0:
-            save_cache()
-            print(f"{i} city addresses processed")
-
-    save_cache()
-
-    df["coordinates"] = df["city_address"].map(cache)
-
-    df["longitude"] = df["coordinates"].apply(
-        lambda x: x[0] if isinstance(x, (list, tuple)) else None
-    )
-
-    df["latitude"] = df["coordinates"].apply(
-        lambda x: x[1] if isinstance(x, (list, tuple)) else None
-    )
-
-    df = df.drop(columns=["coordinates", "city_address"])
-
+###
+# LOADERS
+###
+def load_appartenance(path: str) -> pd.DataFrame:
+    df = pd.read_parquet(path)
+    df["Code géographique"] = df["Code géographique"].astype(str).str.zfill(5)
+    df["Zone d'emploi 2020"] = df["Zone d'emploi 2020"].astype(str).str.zfill(4)
+    df["Intercommunalité – Métropole"] = df["Intercommunalité – Métropole"].astype(str)
     return df
+
+
+def load_stats_communes(path: str) -> pd.DataFrame:
+    df = pd.read_parquet(path)
+    df["CodeCommune"] = df["CodeCommune"].astype(str).str.zfill(5)
+    return df
+
+
+def load_stats_chomage(path: str) -> pd.DataFrame:
+    df = pd.read_parquet(path)
+    df["CodeZoneEmploi"] = df["CodeZoneEmploi"].astype(str).str.zfill(4)
+    return df.drop(columns=["Libellé"], errors="ignore")
+
+
+def load_stats_intercommunes(path: str) -> pd.DataFrame:
+    df = pd.read_parquet(path)
+    df["CodeInterco"] = df["CodeInterco"].astype(str)
+    return df.drop(columns=["Libellé"], errors="ignore")
+
+
+###
+# BUILD REF_COMMUNE
+###
+def build_ref_commune(
+        appartenance: pd.DataFrame,
+        stats_communes: pd.DataFrame,
+        stats_chomage: pd.DataFrame,
+        stats_intercommunes: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Build a single reference table at city level.
+
+    Joins:
+        Stats_Communes        ← base (one row per city)
+        Appartenance_Commune  ← adds zone emploi, interco, canton, département
+        Stats_Chomage          ← adds taux de chômage via zone d'emploi
+        Stats_Intercommunes   ← adds salaire net, taux de pauvreté via interco
+    """
+
+    # Stats_Communes + Appartenance_Commune
+    ref = stats_communes.merge(
+        appartenance,
+        left_on="CodeCommune",
+        right_on="Code géographique",
+        how="left",
+    ).drop(columns=["Libellé géographique"], errors="ignore")
+
+    unmatched = ref["Zone d'emploi 2020"].isna().sum()
+    print(f"  Stats_Communes ← Appartenance : {unmatched:,} unmatched communes")
+
+    # Add Stats_Chomage
+    ref = ref.merge(
+        stats_chomage,
+        left_on="Zone d'emploi 2020",
+        right_on="CodeZoneEmploi",
+        how="left",
+    ).drop(columns=["CodeZoneEmploi"], errors="ignore")
+
+    unmatched = ref["Taux de chômage"].isna().sum()
+    print(f"  ref ← Stats_Chomage : {unmatched:,} unmatched communes")
+
+    # Add Stats_Intercommunes
+    ref = ref.merge(
+        stats_intercommunes,
+        left_on="Intercommunalité – Métropole",
+        right_on="CodeInterco",
+        how="left",
+    ).drop(columns=["CodeInterco"], errors="ignore")
+
+    unmatched = ref["Taux de pauvreté"].isna().sum()
+    print(f"  ref ← Stats_Intercommunes : {unmatched:,} unmatched communes")
+
+    return ref
+
+
+###
+# ENRICH DVF
+###
+def build_geo_code(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Concatenate Département + Code commune → 5-digit geo code.
+    e.g. '75' + '056' → '75056'
+    """
+    dept = df["Departement"].astype(str).str.zfill(2)
+    commune = df["Code commune"].astype(str).str.zfill(3)
+    df["code_geo"] = dept + commune
+    return df
+
+
+def enrich_with_stats(
+        dvf: pd.DataFrame,
+        appartenance_path: str,
+        stats_communes_path: str,
+        stats_chomage_path: str,
+        stats_intercommunes_path: str,
+) -> pd.DataFrame:
+    print("Loading external files...")
+    appartenance = load_appartenance(appartenance_path)
+    stats_communes = load_stats_communes(stats_communes_path)
+    stats_chomage = load_stats_chomage(stats_chomage_path)
+    stats_intercommunes = load_stats_intercommunes(stats_intercommunes_path)
+
+    print("Building ref_commune...")
+    ref = build_ref_commune(
+        appartenance,
+        stats_communes,
+        stats_chomage,
+        stats_intercommunes,
+    )
+
+    # Save ref_commune
+    ref_path = PROCESSED_DIR / "ref_commune.parquet"
+    ref.to_parquet(ref_path, index=False, compression="snappy")
+    print(f"  ref_commune saved → {ref_path} ({len(ref):,} rows, {len(ref.columns)} cols)")
+
+    print("Joining DVF ← ref_commune...")
+    dvf = build_geo_code(dvf)
+
+    dvf = dvf.merge(
+        ref,
+        left_on="code_geo",
+        right_on="CodeCommune",
+        how="left",
+    ).drop(columns=["code_geo", "CodeCommune", "Code géographique"], errors="ignore")
+
+    unmatched = dvf["Médiane du niveau de vie"].isna().sum()
+    print(f"  DVF ← ref_commune : {unmatched:,} unmatched transactions ({unmatched / len(dvf):.1%})")
+
+    return dvf
