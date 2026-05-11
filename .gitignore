@@ -10,6 +10,7 @@ __pycache__/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+notebooks/test_excel.ipynb
 notebooks/test.ipynb
 
 # System
