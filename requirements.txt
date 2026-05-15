@@ -9,3 +9,4 @@ uvicorn
 pyyaml
 pydantic
 django-ratelimit2
+hdbscan
