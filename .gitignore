@@ -16,7 +16,6 @@ notebooks/test.ipynb
 .DS_Store
 Thumbs.db
 
-reports/figures/
 src/__init__.py
 src/data/__init__.py
 tests/__init__.py
