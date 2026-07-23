@@ -3,101 +3,139 @@
 ## Context
 
 Analysis of French real estate transactions from the Demandes de Valeurs
-Foncières (DVF) 2025, official source data.gouv.fr.
+Foncières (DVF) 2025, enriched with socio-economic data at commune,
+intercommunal, and employment zone levels.
 
 **Scope** : France (mainland + overseas)  
 **Raw volume** : 465,206 transactions - 18 variables  
 **Cleaned volume (core market)** : 372,196 transactions (p10–p90)  
-**Memory usage** : ~68 MB
+**Enriched dataset** : 379,890 transactions — 38 variables
+
+**External sources:**
+- Stats_Communes — INSEE 2022–2023 (income, employment, infrastructure)
+- Stats_Intercommunes — INSEE 2023 (salary, poverty rate)
+- Taux_Chomage — INSEE 2025 Q4 (unemployment by employment zone)
+- Appartenance_Commune — INSEE (geographic hierarchy)
 
 ---
 
 ## Key Findings
 
-### Price per m² - full dataset
+### Price per m²
 
-| Metric | Raw | Core market |
-|---|---|---|
-| Mean | 6,840/m² | 3,920/m² |
-| Median | 3,443/m² | 3,443/m² |
-| Std deviation | 18,490 | 1,925 |
-| Max | 324,872/m² | 9,800/m² |
+| Metric        | Raw        | Core market |
+|---------------|------------|-------------|
+| Mean          | 6,840/m²   | 3,920/m²    |
+| Median        | 3,443/m²   | 3,443/m²    |
+| Std deviation | 18,490     | 1,925       |
+| Max           | 324,872/m² | 9,800/m²    |
 
 > The median is stable before and after filtering - it represents the real
 > market. The raw mean is artificially inflated by extreme values.
 
-### Geographic breakdown (core market)
-
 **Most expensive departments:**
 
-| Dept | Median €/m² |
-|---|---|
-| 75 - Paris | 8,158 |
-| 92 - Hauts-de-Seine | 6,200 |
-| 06 - Alpes-Maritimes | 4,778 |
-| 94 - Val-de-Marne | 4,708 |
-| 83 - Var | 3,810 |
+| Dept                 | Median €/m² |
+|----------------------|:-----------:|
+| 75 - Paris           |    8,158    |
+| 92 - Hauts-de-Seine  |    6,200    |
+| 06 - Alpes-Maritimes |    4,778    |
+| 94 - Val-de-Marne    |    4,708    |
+| 83 - Var             |    3,810    |
 
-**Most expensive cities (core market, min. 955 transactions):**
+**Seasonality:** volume varies up to 80% across months — prices stable (~10%).
 
-| City | Median €/m² |
-|---|---|
-| Neuilly-sur-Seine | 8,667 |
-| Paris 11th | 8,536 |
-| Paris 16th | 8,500 |
-| Levallois-Perret | 8,428 |
-| Chamonix Mont-Blanc | 8,241 |
+---
 
-**Top 5 cities by transaction volume:**
-Nice (7,818), Toulouse (7,441), Montpellier (4,791), Nantes (4,475),
-Bordeaux (3,770)
+### 2 — Feature importance (Random Forest)
 
-### By property type (core market)
+Features predicting price/m² : 20 socio-economic + geographic variables,
+excluding surface and property value (data leakage).
 
-| Type | Median €/m² | Volume |
-|---|---|---|
-| Apartment | 3,472 | 326,470 |
-| Commercial premises | 3,232 | 25,633 |
-| House | 3,223 | 20,093 |
+| Feature                | Importance | Interpretation                      |
+|------------------------|------------|-------------------------------------|
+| SL (avg salary)        | 22%        | High-wage areas have higher prices  |
+| MED_SL (median income) | 20%        | Local wealth is the primary driver  |
+| Latitude               | 14%        | North/South gradient, Paris premium |
+| Longitude              | 6%         | East/West, coastal vs inland        |
+| LOG (housing stock)    | 4.5%       | Urban density proxy                 |
 
-> Differences between property types are small once outliers are removed:
-> the residential market is relatively homogeneous at the median level.
+> **Income (SL + MED_SL) accounts for 42% of price variance.**
+> Geography adds another 20%, confirming that location operates independently of local wealth.
 
-### Seasonality
+---
 
-**Volume:** strong seasonality - up to 80% difference between months.
-- Peaks: July (40,084), December (35,321), September (35,903)
-- Troughs: August (22,999), May (25,634), February (26,336)
+### 3 — Clustering (HDBSCAN)
 
-**Price:** no significant seasonality - ~10% variation across the year.
-- Slightly more expensive months: December, September, July
-- Slightly cheaper months: April, August, February
+237 distinct real estate zones identified via density-based clustering on geographic coordinates, profiled with socio-economic indicators.
 
-### Correlations (Spearman, core market)
+**KMeans was rejected** — silhouette score collapsed after K=2, no meaningful elbow. HDBSCAN better handles the spatial and
+socio-economic heterogeneity of the French market.
 
-| Factor | Correlation with property value |
-|---|---|
-| Built area (m²) | **0.63** |
-| Price per m² | 0.56 |
-| Number of rooms | 0.46 |
+**Cluster distribution:**
 
-> Key insight: after outlier removal, **built area overtakes price/m²** as
-> the primary driver of value. Larger properties tend to have a lower price
-> per m² - confirming a non-linear market structure.
+| Cluster              | Transactions | %     | Median €/m² |
+|----------------------|--------------|-------|-------------|
+| Deprived Areas       | 90,078       | 26.8% | ~2,633      |
+| Outliers             | 78,224       | 23.3% | ~2,778      |
+| Affluent Urban       | 45,431       | 13.5% | ~4,552      |
+| Premium              | 37,572       | 11.2% | ~3,826      |
+| Countryside          | 32,093       | 9.6%  | ~3,482      |
+| Exceptions           | 29,114       | 8.7%  | ~6,000      |
+| Economically Fragile | 22,360       | 6.7%  | ~2,804      |
+| Intermediate Areas   | 970          | 0.3%  | ~3,434      |
+
+**Cluster profiles:**
+
+| Cluster              | Price/m² | Price | Surface | Unemployment | Income |
+|----------------------|:--------:|:-----:|:-------:|:------------:|:------:|
+| Deprived Areas       |    -     |   -   |    +    |      -       |   -    |
+| Economically Fragile |    -     |  --   |    -    |      ++      |   -    |
+| Intermediate Areas   |    +     |   +   |    +    |      +       |   +    |
+| Countryside          |    +     |   +   |    +    |      +       |   +    |
+| Premium              |    +     |   +   |    -    |      +       |   -    |
+| Affluent Urban       |    ++    |  ++   |    -    |      -       |   +    |
+| Exceptions           |   +++    |  +++  |    +    |      =       |   ++   |
+| Outliers             |    -     |   -   |    +    |      -       |   +    |
+
+*`+/-` ≈ ±25% vs national median*
+
+**Geographic patterns:**
+- Exceptions : Paris, Côte d'Azur, Geneva border, Arcachon, Basque Coast
+- Premium : City centres of all major French cities (except Paris)
+- Affluent Urban : Western Paris suburbs (92), Lyon west, Bordeaux Métropole
+- Countryside : Periurban ring around major cities ("rurban" migration)
+- Economically Fragile : Former industrial basins (Lorraine, Ardennes)
+
+---
+
+### 4 — Income vs price decoupling
+
+Analysis of the price/m² vs median income scatter by postal code reveals three mechanisms where prices decouple from local income:
+
+| Mechanism              | Example cities                       | Driver           |
+|------------------------|--------------------------------------|------------------|
+| Demographic tension    | Nantes, Toulouse, Rennes, Lille      | Supply < demand  |
+| Tourism / second homes | Ajaccio, Fréjus, Corsica             | External buyers  |
+| Periurban overspill    | Cergy, Pierrelaye, Villeneuve-d'Ascq | Proximity to hub |
+
+> High income areas **always** translate into high prices (bottom-right quadrant is empty). 
+> The reverse is not true — confirming that wealth is necessary but not sufficient: supply 
+> tension and external demand act as independent price amplifiers.
 
 ---
 
 ## Methodology
 
-| Step | Tool | Detail |
-|---|---|---|
-| Loading | Pandas / Parquet | `src/data/load_data.py` |
-| Cleaning | Pandas | `src/data/clean_data.py` |
-| Analysis | Pandas / Matplotlib | `notebooks/03_analysis.ipynb` |
-| Outlier filtering | Quantile p10–p90 | ~20% of transactions removed |
-
-**Core market definition:** transactions between the 10th and 90th percentile
-of price/m² (1,412 - 9,800/m²), retaining 372,196 transactions.
+| Step              | Tool                 | Detail                                 |
+|-------------------|----------------------|----------------------------------------|
+| Loading           | Pandas / Parquet     | `src/data/load_data.py`                |
+| Cleaning          | Pandas               | `src/data/clean_data.py`               |
+| Geocoding         | API géo + cache JSON | `src/data/geocoder.py`                 |
+| Enrichment        | Pandas joins         | `src/data/enrich_data.py`              |
+| Outlier filtering | Quantile p10–p90     | ~20% of transactions removed           |
+| Feature analysis  | Sklearn RandomForest | `notebooks/04_features_analysis.ipynb` |
+| Clustering        | HDBSCAN              | `notebooks/05_clustering.ipynb`        |
 
 ---
 
@@ -106,13 +144,22 @@ of price/m² (1,412 - 9,800/m²), retaining 372,196 transactions.
 - DVF excludes off-plan sales (VEFA) and inheritances
 - Data unavailable for Alsace-Moselle and Mayotte
 - Prices do not account for property condition, floor level, or renovation state
-- The Amiens 69M € transaction (19 rows, multi-lot sale) illustrates the limits
-  of per-lot price/m² calculation on bundled sales
-- Single-year scope (2025) - no inter-annual comparison available
+- The Amiens €69M transaction (multi-lot sale) illustrates per-lot price/m²
+  calculation limits on bundled sales
+- Single-year scope (2025) — no inter-annual comparison available
+- Geocoding at postal code level — not individual address
+
+---
+
+## Key Visualizations
+
+|                                                           |                                                          |
+|-----------------------------------------------------------|----------------------------------------------------------|
+| ![Map](reports/figures/map_cluster_price.png)             | ![Clusters](reports/figures/map_clusters_geographic.png) |
+| ![Heatmap](reports/figures/heatmap_cluster_profiles.png)  | ![Scatter](reports/figures/scatter_income_vs_price.png)  |
 
 ---
 
 ## Next Steps
 
-- [ ] Inter-annual comparison 2020–2025
 - [ ] Interactive dashboard via the API (`api/app.py`)
