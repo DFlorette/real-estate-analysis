@@ -11,3 +11,6 @@ paths:
     stats_communes: data/clean/stats_communes.parquet
     stats_chomage: data/clean/stats_chomage.parquet
     stats_intercommunes: data/clean/stats_intercommunes_2023.parquet
+clustering:
+  min_cluster_size: 500
+  min_samples: 50
