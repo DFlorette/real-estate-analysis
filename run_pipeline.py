@@ -15,6 +15,8 @@ from src.data.clean_data import (clean_dvf,
 from src.analysis.metrics import get_core_market
 from src.data.enrich_data import enrich_with_stats
 from src.data.geocoder import enrich_with_coordinates
+from src.features.build_features import rename_features
+from src.analysis.clustering import add_clusters
 
 ##
 # CONFIG
@@ -94,6 +96,18 @@ else:
         stats_communes_path=config["paths"]["clean"]["stats_communes"],
         stats_chomage_path=config["paths"]["clean"]["stats_chomage"],
         stats_intercommunes_path=config["paths"]["clean"]["stats_intercommunes"],
+    )
+
+    df_dvf_core = rename_features(df_dvf_core)
+
+    ##
+    # CLUSTERING
+    ##
+    print("Clustering...")
+    df_dvf_core = add_clusters(
+        df_dvf_core,
+        min_cluster_size=config["clustering"]["min_cluster_size"],
+        min_samples=config["clustering"]["min_samples"],
     )
 
     ##
