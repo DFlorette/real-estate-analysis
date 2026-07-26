@@ -74,16 +74,16 @@ socio-economic heterogeneity of the French market.
 
 **Cluster distribution:**
 
-| Cluster              | Transactions | %     | Median €/m² |
-|----------------------|--------------|-------|-------------|
-| Deprived Areas       | 90,078       | 26.8% | ~2,633      |
-| Outliers             | 78,224       | 23.3% | ~2,778      |
-| Affluent Urban       | 45,431       | 13.5% | ~4,552      |
-| Premium              | 37,572       | 11.2% | ~3,826      |
-| Countryside          | 32,093       | 9.6%  | ~3,482      |
-| Exceptions           | 29,114       | 8.7%  | ~6,000      |
-| Economically Fragile | 22,360       | 6.7%  | ~2,804      |
-| Intermediate Areas   | 970          | 0.3%  | ~3,434      |
+| Cluster              | Transactions | %     | Median €/m² | vs France |
+|----------------------|--------------|-------|-------------|-----------|
+| Deprived Areas       | 90,078       | 26.8% | ~2,661      | -22.70%   |
+| Outliers             | 78,224       | 23.3% | ~2,767      | -19.66%   |
+| Affluent Urban       | 45,431       | 13.5% | ~4,730      | +37.39%   |
+| Premium              | 37,572       | 11.2% | ~3,784      | +9.91%    |
+| Countryside          | 32,093       | 9.6%  | ~3,558      | +3.34%    |
+| Exceptions           | 29,114       | 8.7%  | ~6,986      | +102.91%  |
+| Economically Fragile | 22,360       | 6.7%  | ~2,790      | -18.96%   |
+| Intermediate Areas   | 970          | 0.3%  | ~3,743      | +8.73%    |
 
 **Cluster profiles:**
 
@@ -98,7 +98,7 @@ socio-economic heterogeneity of the French market.
 | Exceptions           |   +++    |  +++  |    +    |      =       |   ++   |
 | Outliers             |    -     |   -   |    +    |      -       |   +    |
 
-*`+/-` ≈ ±25% vs national median*
+*`+/-` ≈ ±25% vs national median — `++/--` ≈ ±50% — `+++` ≈ +100%*
 
 **Geographic patterns:**
 - Exceptions : Paris, Côte d'Azur, Geneva border, Arcachon, Basque Coast
@@ -125,6 +125,24 @@ Analysis of the price/m² vs median income scatter by postal code reveals three 
 
 ---
 
+### 5 — Socio-economic correlations (Spearman)
+
+Correlations between socio-economic indicators and price/m²,
+computed on the enriched core market dataset.
+
+| Feature                | Correlation | Interpretation                          |
+|------------------------|-------------|-----------------------------------------|
+| MED_SL (median income) | **+0.395**  | Stronger local wealth → higher prices   |
+| SL (average salary)    | **+0.250**  | High-wage employment zones drive prices |
+| CHOMAGE (unemployment) | **-0.060**  | Weak negative signal                    |
+| PR_MD60 (poverty rate) | **+0.005**  | No significant linear relationship      |
+
+> **Note :** correlations are weaker than in the raw feature analysis notebook
+> (MED_SL : 0.52 → 0.395) because the enriched dataset includes a broader
+> geographic scope and different outlier composition after pipeline processing.
+
+---
+
 ## Methodology
 
 | Step              | Tool                 | Detail                                 |
@@ -136,6 +154,7 @@ Analysis of the price/m² vs median income scatter by postal code reveals three 
 | Outlier filtering | Quantile p10–p90     | ~20% of transactions removed           |
 | Feature analysis  | Sklearn RandomForest | `notebooks/04_features_analysis.ipynb` |
 | Clustering        | HDBSCAN              | `notebooks/05_clustering.ipynb`        |
+| Dashboard         | Power BI + FastAPI   | `api/app.py`                           |
 
 ---
 
@@ -148,6 +167,7 @@ Analysis of the price/m² vs median income scatter by postal code reveals three 
   calculation limits on bundled sales
 - Single-year scope (2025) — no inter-annual comparison available
 - Geocoding at postal code level — not individual address
+- Correlations computed on Spearman rank — linear relationships only
 
 ---
 
@@ -162,4 +182,4 @@ Analysis of the price/m² vs median income scatter by postal code reveals three 
 
 ## Next Steps
 
-- [ ] Interactive dashboard via the API (`api/app.py`)
+- [x] Interactive dashboard via the API (`api/app.py`)
