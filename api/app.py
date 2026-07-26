@@ -35,6 +35,8 @@ app = FastAPI(
 class StatsResponse(BaseModel):
     median_price_m2: float
     mean_price_m2: float
+    median_standard_living: float
+    median_unemployment: float
     nb_transactions: int
 
 
@@ -59,6 +61,8 @@ def get_stats():
     return StatsResponse(
         median_price_m2=float(df["prix_m2"].median()),
         mean_price_m2=float(df["prix_m2"].mean()),
+        median_standard_living=float(df["MED_SL"].median()),
+        median_unemployment=float(df["CHOMAGE"].median()),
         nb_transactions=int(len(df)),
     )
 
@@ -69,13 +73,21 @@ def get_stats():
 def prices_by_city(
         limit: int = Query(default=10000, ge=1, le=50000),
         offset: int = Query(default=0, ge=0),
+        top_n: int = Query(default=10, ge=1, le=100),
+        min_transactions: int = Query(default=100, ge=1),
 ):
+
+    city_stats = df.groupby("Commune").agg(
+        median_price_m2 = ("prix_m2", "median"),
+        nb_transactions = ("prix_m2", "count"),
+    )
+
     return (
-        df.groupby("Commune")["prix_m2"]
-        .median()
+        city_stats[city_stats["nb_transactions"] >= min_transactions]["median_price_m2"]
         .sort_values(ascending=False)
+        .head(top_n)
         .reset_index()
-        .rename(columns={"Commune": "city", "prix_m2": "median_price_m2"})
+        .rename(columns={"Commune": "city", "median_price_m2": "median_price_m2"})
         .iloc[offset:offset + limit]
         .to_dict(orient="records")
     )
@@ -128,9 +140,8 @@ def get_transactions(
     offset: int = Query(default=0, ge=0),
 ):
     cols = [
-        "Commune", "Code postal", "Type local",
-        "prix_m2", "Valeur fonciere", "Surface reelle bati",
-        "longitude", "latitude", "cluster_name",
+        "Commune", "prix_m2", "Valeur fonciere", "Surface reelle bati", "longitude", "latitude",
+        "cluster_name", "MED_SL", "SL", "CHOMAGE", "PR_MD60"
     ]
     return df[cols].dropna().iloc[offset:offset + limit].to_dict(orient="records")
 
@@ -214,3 +225,27 @@ def get_clusters_stats():
         .reset_index()
     )
     return stats.to_dict(orient="records")
+
+##
+# CORRELATIONS
+##
+@app.get("/correlations", tags=["Analysis"])
+def get_correlations():
+    """Spearman correlations with prix_m2"""
+
+    numeric_cols = ["MED_SL", "SL", "CHOMAGE", "PR_MD60"]
+
+    available = [col for col in numeric_cols if col in df.columns]
+
+    corr = (
+        df[available + ["prix_m2"]]
+        .corr(method="spearman")["prix_m2"]
+        .drop("prix_m2")
+        .reset_index()
+        .rename(columns={"index": "feature", "prix_m2": "correlation"})
+        .sort_values("correlation", ascending=False)
+    )
+
+    corr["correlation"] = corr["correlation"].round(3)
+
+    return corr.to_dict(orient="records")
