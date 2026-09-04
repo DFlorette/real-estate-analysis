@@ -1,12 +1,31 @@
-pandas
-numpy
-requests
-matplotlib
-seaborn
-scikit-learn
-fastapi
-uvicorn
-pyyaml
-pydantic
-django-ratelimit2
-hdbscan
+# Data wrangling
+pandas==3.0.2
+numpy==2.4.4
+pyarrow==24.0.0          # Parquet engine (pandas.to_parquet / read_parquet)
+python-calamine==0.6.2   # Excel engine used by load_appartenance_commune
+openpyxl==3.1.5          # Excel fallback engine
+
+# Visualisation
+matplotlib==3.10.9
+seaborn==0.13.2
+
+# Machine learning
+scikit-learn==1.8.0
+hdbscan==0.8.43
+
+# Geocoding
+requests==2.33.1
+ratelimit==2.2.1         # @limits / @sleep_and_retry in src/data/geocoder.py
+
+# API
+fastapi==0.136.1
+uvicorn==0.46.0
+pydantic==2.13.3
+
+# Config
+PyYAML==6.0.3
+
+# Dev / notebooks
+pytest==9.0.3
+ipykernel==7.2.0
+notebook

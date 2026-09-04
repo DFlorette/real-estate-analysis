@@ -7,9 +7,10 @@ Foncières (DVF) 2025, enriched with socio-economic data at commune,
 intercommunal, and employment zone levels.
 
 **Scope** : France (mainland + overseas)  
-**Raw volume** : 465,206 transactions - 18 variables  
-**Cleaned volume (core market)** : 372,196 transactions (p10–p90)  
-**Enriched dataset** : 379,890 transactions — 38 variables
+**Raw volume** : 3,714,829 rows — 18 of ~43 variables loaded  
+**Cleaned volume** : 474,723 transactions (built properties, valid price and surface)  
+**Core market** : 379,890 transactions — 80.0% of cleaned rows (p10–p90)  
+**Enriched dataset** : 379,890 transactions — 42 variables
 
 **External sources:**
 - Stats_Communes — INSEE 2022–2023 (income, employment, infrastructure)
@@ -23,12 +24,12 @@ intercommunal, and employment zone levels.
 
 ### Price per m²
 
-| Metric        | Raw        | Core market |
-|---------------|------------|-------------|
-| Mean          | 6,840/m²   | 3,920/m²    |
-| Median        | 3,443/m²   | 3,443/m²    |
-| Std deviation | 18,490     | 1,925       |
-| Max           | 324,872/m² | 9,800/m²    |
+| Metric        | Cleaned       | Core market |
+|---------------|---------------|-------------|
+| Mean          | 17,973/m²     | 3,955/m²    |
+| Median        | 3,443/m²      | 3,443/m²    |
+| Std deviation | 173,124       | 2,017       |
+| Max           | 33,912,500/m² | 10,250/m²   |
 
 > The median is stable before and after filtering - it represents the real
 > market. The raw mean is artificially inflated by extreme values.
@@ -37,13 +38,14 @@ intercommunal, and employment zone levels.
 
 | Dept                 | Median €/m² |
 |----------------------|:-----------:|
-| 75 - Paris           |    8,158    |
-| 92 - Hauts-de-Seine  |    6,200    |
-| 06 - Alpes-Maritimes |    4,778    |
-| 94 - Val-de-Marne    |    4,708    |
-| 83 - Var             |    3,810    |
+| 75 - Paris           |    8,400    |
+| 92 - Hauts-de-Seine  |    6,250    |
+| 06 - Alpes-Maritimes |    4,792    |
+| 94 - Val-de-Marne    |    4,724    |
+| 74 - Haute-Savoie    |    4,393    |
 
-**Seasonality:** volume varies up to 80% across months — prices stable (~10%).
+**Seasonality:** volume varies up to 75% across months (23,403 in August vs 40,953 in July)
+— prices stable (~6%).
 
 ---
 
@@ -67,23 +69,23 @@ excluding surface and property value (data leakage).
 
 ### 3 — Clustering (HDBSCAN)
 
-237 distinct real estate zones identified via density-based clustering on geographic coordinates, profiled with socio-economic indicators.
+273 distinct real estate zones identified via density-based clustering on geographic coordinates, profiled with socio-economic indicators.
 
 **KMeans was rejected** — silhouette score collapsed after K=2, no meaningful elbow. HDBSCAN better handles the spatial and
 socio-economic heterogeneity of the French market.
 
 **Cluster distribution:**
 
-| Cluster              | Transactions | %     | Median €/m² | vs France |
-|----------------------|--------------|-------|-------------|-----------|
-| Deprived Areas       | 90,078       | 26.8% | ~2,661      | -22.70%   |
-| Outliers             | 78,224       | 23.3% | ~2,767      | -19.66%   |
-| Affluent Urban       | 45,431       | 13.5% | ~4,730      | +37.39%   |
-| Premium              | 37,572       | 11.2% | ~3,784      | +9.91%    |
-| Countryside          | 32,093       | 9.6%  | ~3,558      | +3.34%    |
-| Exceptions           | 29,114       | 8.7%  | ~6,986      | +102.91%  |
-| Economically Fragile | 22,360       | 6.7%  | ~2,790      | -18.96%   |
-| Intermediate Areas   | 970          | 0.3%  | ~3,743      | +8.73%    |
+| Cluster              | Transactions | %      | Median €/m² | vs France |
+|----------------------|--------------|--------|-------------|-----------|
+| Deprived Areas       | 91,360       | 24.0%  | ~2,661      | -22.70%   |
+| Outliers             | 78,688       | 20.7%  | ~2,766      | -19.66%   |
+| Exceptions           | 47,951       | 12.6%  | ~6,986      | +102.91%  |
+| Affluent Urban       | 41,498       | 10.9%  | ~4,730      | +37.39%   |
+| Premium              | 39,080       | 10.3%  | ~3,784      | +9.91%    |
+| Countryside          | 34,922       | 9.2%   | ~3,558      | +3.34%    |
+| Economically Fragile | 24,155       | 6.4%   | ~2,790      | -18.96%   |
+| Intermediate Areas   | 22,236       | 5.9%   | ~3,743      | +8.73%    |
 
 **Cluster profiles:**
 

@@ -117,6 +117,7 @@ def enrich_with_stats(
 
     # Save ref_commune
     ref_path = PROCESSED_DIR / "ref_commune.parquet"
+    ref_path.parent.mkdir(parents=True, exist_ok=True)
     ref.to_parquet(ref_path, index=False, compression="snappy")
     print(f"  ref_commune saved → {ref_path} ({len(ref):,} rows, {len(ref.columns)} cols)")
 
