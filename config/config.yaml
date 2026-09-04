@@ -1,7 +1,8 @@
 paths:
   raw_data: data/raw/ValeursFoncieres-2025.txt
   clean_data: data/clean/dvf_clean.parquet
-  processed_data: data/processed/dvf_core.parquet
+  core_data: data/clean/dvf_core.parquet
+  processed_data: data/processed/dvf_processed.parquet
   raw_appartenance_communes: data/raw/table-appartenance-geo-communes-2026.xlsx
   raw_stats_commune: data/raw/Stats_Commune.csv
   raw_stats_chomage: data/raw/Stats_Chomage.csv

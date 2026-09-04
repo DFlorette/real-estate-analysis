@@ -10,11 +10,11 @@ employment zone levels.
 ## Key Findings
 
 - **Median price/m²** : €3,443 nationally (core market)  
-- **Most expensive city** : Neuilly-sur-Seine at €8,667/m²  
+- **Most expensive city** : Neuilly-sur-Seine at €8,988/m² (472 transactions)  
 - **Primary price drivers** : local income (SL + MED_SL = 42% RF importance) and geography (lat/lon = 20%)  
-- **237 real estate clusters** identified via HDBSCAN — from Deprived Areas to Exceptions  
+- **273 real estate clusters** identified via HDBSCAN — from Deprived Areas to Exceptions  
 - **Income decoupling** : tourist cities (Ajaccio, Fréjus) and periurban zones (Cergy, Pierrelaye) show high prices despite modest local income  
-- **Seasonality** : volume varies up to 80% across months — prices remain stable (~10%)  
+- **Seasonality** : volume varies up to 75% across months — prices remain stable (~6%)  
 
 ---
 
@@ -38,19 +38,35 @@ real-estate-analysis/
 │   ├── 04_features_analysis.ipynb  # RF feature importance + correlations
 │   └── 05_clustering.ipynb         # HDBSCAN clustering + profiling
 ├── src/
-│   ├── data/                       # Loading, cleaning, geocoding, enrichment
-│   ├── analysis/                   # Metrics and aggregations
-│   ├── features/                   # Feature engineering
-│   └── utils/                      # Helpers
+│   ├── data/
+│   │   ├── load_data.py            # Readers for DVF and the 4 INSEE files
+│   │   ├── clean_data.py           # Typing, filtering, prix_m2
+│   │   ├── geocoder.py             # API Géo + JSON cache (rate-limited)
+│   │   └── enrich_data.py          # ref_commune + join onto DVF
+│   ├── analysis/
+│   │   ├── metrics.py              # Core market filter (p10–p90)
+│   │   └── clustering.py           # HDBSCAN + cluster naming
+│   └── features/
+│       └── build_features.py       # Feature engineering and renaming
 ├── api/
-│   └── app.py                      # REST API (FastAPI)
+│   └── app.py                      # REST API (FastAPI) — 18 endpoints
+├── tests/
+│   ├── test_geocode.py             # Geocoding and cache behaviour
+│   └── test_metrics.py             # Core market filter
 ├── reports/
 │   ├── summary.md                  # Full analysis results
+│   ├── real_estate_dashboard.pbix  # Power BI dashboard
 │   └── figures/                    # Exported charts
 ├── data/
-│   └── README.md                   # Data sources and download instructions
+│   ├── README.md                   # Data sources and download instructions
+│   ├── raw/                        # Source files (not versioned)
+│   ├── clean/                      # dvf_clean / dvf_core + INSEE (Parquet)
+│   ├── cache/                      # geocode_cache.json
+│   └── processed/                  # dvf_processed.parquet — pipeline output
+├── config/
+│   └── config.yaml                 # Paths and clustering parameters
 ├── run_pipeline.py                 # End-to-end pipeline
-├── config/config.yaml
+├── pyproject.toml                  # pytest configuration
 └── requirements.txt
 ```
 
@@ -78,11 +94,12 @@ real-estate-analysis/
 | Property              | Value                                        |
 |-----------------------|----------------------------------------------|
 | Source                | data.gouv.fr — DVF 2025                      |
-| Raw transactions      | 465,206                                      |
-| Core market (p10–p90) | 372,196                                      |
-| Enriched dataset      | 379,890 — 38 variables                       |
-| Raw DVF variables     | 18                                           |
-| Memory                | ~68 MB                                       |
+| Raw file rows         | 3,714,829                                    |
+| After cleaning (built properties only) | 474,723                     |
+| Core market (p10–p90) | 379,890 — 80.0% of cleaned rows              |
+| Enriched dataset      | 379,890 — 42 variables                       |
+| DVF variables loaded  | 18 (of ~43 available)                        |
+| Memory                | 17 MB on disk (Parquet) — 150 MB in RAM      |
 | License               | Licence Ouverte / Open Licence v2.0 (Etalab) |
 
 **External sources (INSEE) :**

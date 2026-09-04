@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_PATH = BASE_DIR / "data" / "processed" / "dvf_core.parquet"
+DATA_PATH = BASE_DIR / "data" / "processed" / "dvf_processed.parquet"
 
 MONTH_NAMES = {i: calendar.month_name[i] for i in range(1, 13)}
 

@@ -59,6 +59,7 @@ def geocode_address(address: str, cache: dict, retries: int = 3) -> list | None:
 
 
 def enrich_with_coordinates(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
     cache = load_cache()
 
     df["city_address"] = df["Code postal"].astype(str) + " " + df["Commune"].astype(str)
@@ -84,6 +85,6 @@ def enrich_with_coordinates(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: x[1] if isinstance(x, (list, tuple)) else None
     )
 
-    df.drop(columns=["city_address"])
+    df = df.drop(columns=["city_address"])
 
     return df

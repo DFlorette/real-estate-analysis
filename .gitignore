@@ -11,6 +11,7 @@ __pycache__/
 # Jupyter checkpoints
 .ipynb_checkpoints/
 notebooks/test.ipynb
+notebooks/testing.ipynb
 
 # System
 .DS_Store
