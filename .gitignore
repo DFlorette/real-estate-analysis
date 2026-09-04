@@ -23,3 +23,8 @@ notebooks/test*.ipynb
 # System
 .DS_Store
 Thumbs.db
+
+src/__init__.py
+src/data/__init__.py
+tests/__init__.py
+ci-requirements.txt

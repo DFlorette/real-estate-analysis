@@ -1,5 +1,5 @@
-import numpy as np
 import pandas as pd
+
 
 def get_core_market(df: pd.DataFrame, lower: float = 0.1, upper: float = 0.9) -> pd.DataFrame:
     """Keep the central price band, cutting the tails of prix_m2.

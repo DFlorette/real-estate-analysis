@@ -10,21 +10,25 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src.data.load_data import (load_dvf,
-                                load_appartenance_commune,
-                                load_stats_commune,
-                                load_stats_intercommunes,
-                                load_stats_chomage)
-from src.data.clean_data import (clean_dvf,
-                                 clean_appartenance_commune,
-                                 clean_stats_commune,
-                                 clean_stats_intercommunes,
-                                 clean_stats_chomage)
+from src.analysis.clustering import add_clusters
 from src.analysis.metrics import get_core_market
+from src.data.clean_data import (
+    clean_appartenance_commune,
+    clean_dvf,
+    clean_stats_chomage,
+    clean_stats_commune,
+    clean_stats_intercommunes,
+)
 from src.data.enrich_data import enrich_with_stats
 from src.data.geocoder import enrich_with_coordinates
+from src.data.load_data import (
+    load_appartenance_commune,
+    load_dvf,
+    load_stats_chomage,
+    load_stats_commune,
+    load_stats_intercommunes,
+)
 from src.features.build_features import rename_features
-from src.analysis.clustering import add_clusters
 
 ##
 # CONFIG

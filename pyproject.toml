@@ -1,2 +1,11 @@
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+# Notebooks are exploratory: bare expressions and long plot calls are the point there.
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+# Pinned explicitly so a new ruff release cannot break CI on rules we never opted into.
+select = ["E", "F", "I", "W", "B", "UP"]

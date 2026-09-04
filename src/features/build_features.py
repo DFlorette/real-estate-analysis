@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def add_features(df):
     df = df.copy()
     df["prix_m2"] = df["Valeur fonciere"] / df["Surface reelle bati"]

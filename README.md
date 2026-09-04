@@ -1,5 +1,8 @@
 # French Real Estate Analysis 🏠
 
+[![tests](https://github.com/DFlorette/real-estate-analysis/actions/workflows/tests.yml/badge.svg)](https://github.com/DFlorette/real-estate-analysis/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Exploratory analysis of the French real estate market using official DVF
 (Demandes de Valeurs Foncières) 2025 data — 465,000+ transactions enriched
 with INSEE socio-economic indicators at commune, intercommunal, and
@@ -164,3 +167,13 @@ Full findings in [`reports/summary.md`](reports/summary.md).
 
 **DFlorette** — Data Analyst
 [GitHub](https://github.com/DFlorette)
+
+---
+
+## License
+
+Code released under the [MIT License](LICENSE).
+
+The underlying data keeps its own terms: DVF and the INSEE files are published
+under the *Licence Ouverte / Open Licence v2.0* (Etalab) and are not covered by
+the MIT license above.

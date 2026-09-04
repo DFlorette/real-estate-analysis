@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 import requests
 
-from src.data.geocoder import geocode_address, enrich_with_coordinates
+from src.data.geocoder import enrich_with_coordinates, geocode_address
 
 NANTES_COORDS = [-1.555335, 47.239367]
 

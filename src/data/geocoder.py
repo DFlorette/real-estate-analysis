@@ -1,8 +1,9 @@
-import time
 import json
+import time
+from pathlib import Path
+
 import pandas as pd
 import requests
-from pathlib import Path
 from ratelimit import limits, sleep_and_retry
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -16,7 +17,7 @@ PERIOD = 1
 
 def load_cache() -> dict:
     if CACHE_PATH.exists():
-        with open(CACHE_PATH, "r", encoding="utf-8") as f:
+        with open(CACHE_PATH, encoding="utf-8") as f:
             return json.load(f)
     return {}
 
