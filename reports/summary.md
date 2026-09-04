@@ -54,16 +54,33 @@ intercommunal, and employment zone levels.
 Features predicting price/m² : 20 socio-economic + geographic variables,
 excluding surface and property value (data leakage).
 
-| Feature                | Importance | Interpretation                      |
-|------------------------|------------|-------------------------------------|
-| SL (avg salary)        | 22%        | High-wage areas have higher prices  |
-| MED_SL (median income) | 20%        | Local wealth is the primary driver  |
-| Latitude               | 14%        | North/South gradient, Paris premium |
-| Longitude              | 6%         | East/West, coastal vs inland        |
-| LOG (housing stock)    | 4.5%       | Urban density proxy                 |
+`RandomForestRegressor(n_estimators=100, random_state=42)`, 80/20 split on the
+335,842 rows with complete features (44,048 dropped for missing values).
 
-> **Income (SL + MED_SL) accounts for 42% of price variance.**
-> Geography adds another 20%, confirming that location operates independently of local wealth.
+**Hold-out performance : R² = 0.523, MAE = 867 €/m².**
+
+| Feature                | Importance | Interpretation                          |
+|------------------------|------------|-----------------------------------------|
+| SL (avg salary)        | 22.4%      | High-wage areas have higher prices      |
+| MED_SL (median income) | 19.8%      | Local wealth is the primary driver      |
+| Longitude              | 13.8%      | East/West position — see caveat below   |
+| Nombre pieces principales | 9.2%    | Small units sell at a higher price/m²   |
+| Latitude               | 5.9%       | North/South position                    |
+| LOG (housing stock)    | 4.5%       | Urban density proxy                     |
+
+> **Income (SL + MED_SL) carries 42% of the model's total importance**, and the two
+> coordinates another 20% — location contributes on top of local wealth rather than
+> merely restating it.
+
+**Caveat on the coordinates.** Neither correlates linearly with price (Spearman
+ρ = 0.05 for longitude, 0.08 for latitude). Their weight comes from the trees
+partitioning space into local markets, not from a national North/South or
+East/West price gradient — the importance says *"which market"*, not *"which direction"*.
+
+**Caveat on importance.** Gini importance ranks features within this model; it is
+not variance explained. The model accounts for 52% of the variance in price/m²
+(R² above), so nearly half remains driven by property-level characteristics absent
+from the dataset — condition, floor, exact street, DPE.
 
 ---
 
