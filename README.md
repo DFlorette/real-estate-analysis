@@ -187,7 +187,9 @@ jupyter notebook notebooks/
 
 ## Results
 
-Full findings in [`reports/summary.md`](reports/summary.md).
+Full findings in [`reports/summary.md`](reports/summary.md), which closes with
+[what the analysis supports acting on](reports/summary.md#conclusion--what-to-do-with-this)
+— and what it cannot tell you.
 
 ---
 
