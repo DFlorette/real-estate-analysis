@@ -111,9 +111,9 @@ real-estate-analysis/
 
 ## Stack
 
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Pandas](https://img.shields.io/badge/Pandas-2.x-150458)
-![Sklearn](https://img.shields.io/badge/Sklearn-1.x-F7931E)
+![Python](https://img.shields.io/badge/Python-3.13-blue)
+![Pandas](https://img.shields.io/badge/Pandas-3.x-150458)
+![Sklearn](https://img.shields.io/badge/Sklearn-1.8-F7931E)
 ![Parquet](https://img.shields.io/badge/Format-Parquet-orange)
 
 **Data wrangling** : Pandas, NumPy  
@@ -163,10 +163,12 @@ pip install -r requirements.txt
 
 ### 2 — Download the data
 
-Download `ValeursFoncieres-2025.txt` from
-[data.gouv.fr](https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/)
-and the INSEE files listed in [`data/README.md`](data/README.md).
-Place all files in `data/raw/`.
+The pipeline needs **five** free public files: the DVF 2025 extract from
+[data.gouv.fr](https://www.data.gouv.fr/fr/datasets/demandes-de-valeurs-foncieres/),
+the INSEE commune reference table, and three INSEE local-statistics exports.
+
+[`data/README.md`](data/README.md) lists each one — exact file name, source, and
+the indicators to tick on the INSEE export screen. Place all five in `data/raw/`.
 
 ### 3 — Run the pipeline
 
@@ -174,8 +176,9 @@ Place all files in `data/raw/`.
 python run_pipeline.py
 ```
 
-> First run includes geocoding (~500k addresses via API) — this may take
-> several hours. Subsequent runs use the JSON cache automatically.
+> The first run geocodes the 10,024 distinct postal-code/commune pairs against
+> the Géoplateforme API at 5 calls/second — roughly 35 minutes. Subsequent runs
+> read `data/cache/geocode_cache.json` and issue no requests.
 
 ### 4 — Explore the notebooks
 
