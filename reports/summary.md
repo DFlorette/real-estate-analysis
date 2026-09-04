@@ -238,4 +238,4 @@ variant instead**; the clustering and Random Forest sections inherit this bias.
 
 ## Next Steps
 
-- [x] Interactive dashboard via the API (`api/app.py`)
+- [ ] Interactive dashboard via the API (`api/app.py`)
