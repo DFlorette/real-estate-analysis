@@ -162,6 +162,58 @@ computed on the enriched core market dataset.
 
 ---
 
+## Conclusion — what to do with this
+
+Four decisions the analysis actually supports.
+
+**1. Screen on income, and drop the deprivation indicators.**
+Median income is the single best predictor available here (ρ = 0.395, 20% of the
+model's importance), and average salary follows (ρ = 0.250, 22%). Unemployment
+(ρ = −0.060) and the poverty rate (ρ = +0.005) carry no usable signal — a scoring
+model can drop both at no cost and gain two fewer joins to maintain. Rank
+candidate areas on `MED_SL` and `SL`; ignore `CHOMAGE` and `PR_MD60`.
+
+**2. Look for opportunities in the top-left quadrant, and treat its three
+mechanisms differently.**
+High income always produces high prices — the bottom-right quadrant is empty — so
+wealthy areas hold no mispricing. The exploitable cases are the ones priced above
+what local income explains, and their drivers do not carry the same risk:
+
+| Mechanism | Cities | What it depends on | Durability |
+|---|---|---|---|
+| Demographic tension | Nantes, Toulouse, Rennes, Lille | Structural supply shortfall | Most durable — supply moves slowly |
+| Periurban overspill | Cergy, Pierrelaye, Villeneuve-d'Ascq | The transport link to the hub | Checkable — verify the link before buying |
+| Tourism / second homes | Ajaccio, Fréjus, Corsica | External, non-resident demand | Most fragile — exposed to a demand shock |
+
+**3. Time the transaction for competition, not for price.**
+Volume swings 75% across the year (23,403 transactions in August against 40,953
+in July) while prices move only ~6%. Buying in a trough month buys negotiating
+room against fewer competing offers — it does not buy a discount. Anyone
+expecting a seasonal price dip should stop waiting for one.
+
+**4. Benchmark against the cluster, not against France.**
+Cluster medians run from −22.7% (Deprived Areas) to +102.9% (Exceptions) around
+the national figure. A property compared to the €3,443/m² national median is
+compared to almost nothing; compared to its cluster median it is compared to
+similar markets. This is what the clustering is *for*.
+
+### What this analysis cannot tell you
+
+- **It does not price a property.** The model explains 52% of the variance in
+  price/m² (R² = 0.523, MAE 867 €/m²). The rest sits in attributes absent from
+  DVF — condition, floor, DPE, exact street. Use it to rank markets, not to
+  value an address.
+- **It shows association, not causation.** Nothing here establishes that raising
+  local income raises prices rather than the reverse, or that a third factor
+  drives both.
+- **It is a single year.** 2025 alone, with no inter-annual comparison, so
+  nothing here separates a trend from a one-off.
+- **The core market is filtered globally**, which under-samples both the cheapest
+  departments and Paris — see *Known bias of the p10–p90 filter*. Any
+  department-level reading should re-run with `get_core_market(df, by="Code departement")`.
+
+---
+
 ## Methodology
 
 | Step              | Tool                 | Detail                                 |
