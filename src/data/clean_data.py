@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from pandas.core import series
 
 
 def clean_dvf(df: pd.DataFrame) -> pd.DataFrame:
