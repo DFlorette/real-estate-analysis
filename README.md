@@ -21,6 +21,40 @@ employment zone levels.
 
 ---
 
+## Dashboard (Power BI)
+
+Three linked report pages built on the enriched dataset — source file:
+[`reports/real_estate_dashboard.pbix`](reports/real_estate_dashboard.pbix).
+
+### 1 — National view
+
+![Power BI — national view](reports/figures/real_estate_dashboard_national_view.png)
+
+Headline KPIs, median price/m² by department (choropleth, with an Île-de-France
+inset because the departments there are too small to read at national scale),
+the ten most expensive cities against the national median, and monthly
+transaction volume. Sliceable by department.
+
+### 2 — Cluster analysis
+
+![Power BI — cluster analysis](reports/figures/real_estate_dashboard_clusters.png)
+
+The 8 HDBSCAN clusters mapped across France (outliers hidden to keep the map
+readable), their share of transactions, and a table comparing each cluster's
+price/m², standard of living and unemployment rate against the national figure.
+
+### 3 — Socio-economic analysis
+
+![Power BI — socio-economic analysis](reports/figures/real_estate_dashboard_socio_economic_view.png)
+
+Price/m² against standard of living by postal code, split into four labelled
+quadrants — *tension markets* (high price, low income), *premium & wealthy*,
+*rural wealthy*, and the bulk of the market — plus median price/m² by cluster
+relative to the national median. This is the page behind the income-decoupling
+finding.
+
+---
+
 ## Key Visualizations
 
 | | |
