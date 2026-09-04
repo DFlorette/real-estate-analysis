@@ -199,10 +199,11 @@ Paris at the other. The effect is visible in the national mix — **Paris falls 
 8.03% of transactions to 5.14%**, a 36% relative under-representation of the single
 most-studied market in the dataset.
 
-**Alternative tested.** Clipping p10–p90 *within each department* holds retention at
-80% everywhere by construction, for a near-identical national dataset: 379,791 rows
-instead of 379,890 (−99), national median 3,417 €/m² instead of 3,443 (−0.8%). Same
-volume, same headline figure, no spatial distortion.
+**Alternative available.** `get_core_market(df, by="Code departement")` clips
+p10–p90 *within each department*, holding retention at 80% everywhere by
+construction, for a near-identical national dataset: 379,791 rows instead of
+379,890 (−99), national median 3,417 €/m² instead of 3,443 (−0.8%). Same volume,
+same headline figure, no spatial distortion.
 
 The global filter is kept here because the report's central claim — the median is
 stable while the mean deflates from 17,973 to 3,955 €/m² — is unaffected by the
@@ -238,4 +239,4 @@ variant instead**; the clustering and Random Forest sections inherit this bias.
 
 ## Next Steps
 
-- [x] Interactive dashboard via the API (`api/app.py`)
+- [ ] Interactive dashboard via the API (`api/app.py`)

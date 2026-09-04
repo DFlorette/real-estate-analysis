@@ -87,3 +87,78 @@ def test_core_market_on_empty_frame():
     core = get_core_market(df)
 
     assert core.empty
+
+
+##
+# by= : quantiles computed within each group
+##
+@pytest.fixture
+def two_markets():
+    """Two departments with disjoint price ranges — a global band cuts one of them off."""
+    return pd.DataFrame({
+        "prix_m2": list(range(1000, 1100)) + list(range(8000, 8100)),
+        "dep": ["03"] * 100 + ["75"] * 100,
+    })
+
+
+def test_by_keeps_the_band_within_each_group(two_markets):
+    core = get_core_market(two_markets, by="dep")
+
+    counts = core["dep"].value_counts()
+    assert counts["03"] == 80
+    assert counts["75"] == 80
+
+
+def test_by_holds_retention_where_the_global_band_does_not(two_markets):
+    """The point of the parameter: a global band is a price filter, not a per-market one.
+
+    Doubling the cheap department drags the national p90 down into the expensive
+    one, which then loses rows it would keep on its own — the bias documented in
+    reports/summary.md, reproduced in miniature.
+    """
+    skewed = pd.concat([two_markets, two_markets[two_markets["dep"] == "03"]])
+
+    glob = get_core_market(skewed)
+    per_dep = get_core_market(skewed, by="dep")
+
+    assert (glob["dep"] == "75").sum() == 70
+    assert (per_dep["dep"] == "75").sum() == 80
+
+
+def test_by_accepts_several_columns(two_markets):
+    df = two_markets.assign(type=["A", "B"] * 100)
+
+    core = get_core_market(df, by=["dep", "type"])
+
+    assert core.groupby(["dep", "type"], observed=True).size().tolist() == [40] * 4
+
+
+def test_by_preserves_index_and_row_order(two_markets):
+    core = get_core_market(two_markets, by="dep")
+
+    assert core.index.is_monotonic_increasing
+    assert core.index.isin(two_markets.index).all()
+    pd.testing.assert_frame_equal(core, two_markets.loc[core.index])
+
+
+def test_by_drops_rows_with_a_missing_group(two_markets):
+    df = two_markets.copy()
+    df.loc[0, "dep"] = None
+
+    core = get_core_market(df, by="dep")
+
+    assert core["dep"].notna().all()
+
+
+def test_by_does_not_mutate_input(two_markets):
+    before = two_markets.copy()
+
+    get_core_market(two_markets, by="dep")
+
+    pd.testing.assert_frame_equal(two_markets, before)
+
+
+def test_by_on_empty_frame():
+    df = pd.DataFrame({"prix_m2": pd.Series([], dtype=float), "dep": pd.Series([], dtype=object)})
+
+    assert get_core_market(df, by="dep").empty
