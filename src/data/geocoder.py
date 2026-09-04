@@ -8,6 +8,8 @@ from ratelimit import limits, sleep_and_retry
 BASE_DIR = Path(__file__).resolve().parents[2]
 CACHE_PATH = BASE_DIR / "data" / "cache" / "geocode_cache.json"
 
+API_URL = "https://data.geopf.fr/geocodage/search"
+
 CALLS = 5
 PERIOD = 1
 
@@ -28,6 +30,20 @@ def save_cache(cache: dict) -> None:
 
 @sleep_and_retry
 @limits(calls=CALLS, period=PERIOD)
+def fetch_coordinates(address: str) -> list | None:
+    """One rate-limited call to the API. Only the HTTP call consumes quota."""
+    response = requests.get(API_URL, params={"q": address, "limit": 1}, timeout=10)
+
+    response.raise_for_status()
+
+    features = response.json().get("features")
+
+    if not features:
+        return None
+
+    return features[0]["geometry"]["coordinates"]
+
+
 def geocode_address(address: str, cache: dict, retries: int = 3) -> list | None:
     if not address or "<NA>" in address:
         return None
@@ -35,25 +51,22 @@ def geocode_address(address: str, cache: dict, retries: int = 3) -> list | None:
     if address in cache:
         return cache[address]
 
-    url = "https://data.geopf.fr/geocodage/search"
-    params = {"q": address, "limit": 1}
-
     for attempt in range(retries):
         try:
-            response = requests.get(url, params=params, timeout=10)
-
-            response.raise_for_status()
-
-            data = response.json()
-
-            if data.get("features"):
-                coords = data["features"][0]["geometry"]["coordinates"]
-                cache[address] = coords
-                return coords
-
+            coords = fetch_coordinates(address)
         except requests.RequestException as e:
             print(f"[{attempt + 1}/{retries}] Geocoding error for {address}: {e}")
-            time.sleep(1)
+
+            if attempt < retries - 1:
+                time.sleep(1)
+
+            continue
+
+        # The API answered: either it matched, or the address does not exist.
+        if coords is not None:
+            cache[address] = coords
+
+        return coords
 
     return None
 
