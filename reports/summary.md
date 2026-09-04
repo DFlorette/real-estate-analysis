@@ -54,16 +54,33 @@ intercommunal, and employment zone levels.
 Features predicting price/m² : 20 socio-economic + geographic variables,
 excluding surface and property value (data leakage).
 
-| Feature                | Importance | Interpretation                      |
-|------------------------|------------|-------------------------------------|
-| SL (avg salary)        | 22%        | High-wage areas have higher prices  |
-| MED_SL (median income) | 20%        | Local wealth is the primary driver  |
-| Latitude               | 14%        | North/South gradient, Paris premium |
-| Longitude              | 6%         | East/West, coastal vs inland        |
-| LOG (housing stock)    | 4.5%       | Urban density proxy                 |
+`RandomForestRegressor(n_estimators=100, random_state=42)`, 80/20 split on the
+335,842 rows with complete features (44,048 dropped for missing values).
 
-> **Income (SL + MED_SL) accounts for 42% of price variance.**
-> Geography adds another 20%, confirming that location operates independently of local wealth.
+**Hold-out performance : R² = 0.523, MAE = 867 €/m².**
+
+| Feature                | Importance | Interpretation                          |
+|------------------------|------------|-----------------------------------------|
+| SL (avg salary)        | 22.4%      | High-wage areas have higher prices      |
+| MED_SL (median income) | 19.8%      | Local wealth is the primary driver      |
+| Longitude              | 13.8%      | East/West position — see caveat below   |
+| Nombre pieces principales | 9.2%    | Small units sell at a higher price/m²   |
+| Latitude               | 5.9%       | North/South position                    |
+| LOG (housing stock)    | 4.5%       | Urban density proxy                     |
+
+> **Income (SL + MED_SL) carries 42% of the model's total importance**, and the two
+> coordinates another 20% — location contributes on top of local wealth rather than
+> merely restating it.
+
+**Caveat on the coordinates.** Neither correlates linearly with price (Spearman
+ρ = 0.05 for longitude, 0.08 for latitude). Their weight comes from the trees
+partitioning space into local markets, not from a national North/South or
+East/West price gradient — the importance says *"which market"*, not *"which direction"*.
+
+**Caveat on importance.** Gini importance ranks features within this model; it is
+not variance explained. The model accounts for 52% of the variance in price/m²
+(R² above), so nearly half remains driven by property-level characteristics absent
+from the dataset — condition, floor, exact street, DPE.
 
 ---
 
@@ -158,6 +175,40 @@ computed on the enriched core market dataset.
 | Clustering        | HDBSCAN              | `notebooks/05_clustering.ipynb`        |
 | Dashboard         | Power BI + FastAPI   | `api/app.py`                           |
 
+### Known bias of the p10–p90 filter
+
+The core market is defined by a **single national band** (1,357 – 10,250 €/m²),
+applied identically everywhere. That band removes 20.0% of transactions overall,
+but not evenly — it is a *price* filter, so it cuts hardest wherever local prices
+sit near a national extreme:
+
+| Department        | Median €/m² | Transactions kept |
+|-------------------|------------:|------------------:|
+| 03 - Allier       |       1,333 |             46.4% |
+| 42 - Loire        |       1,360 |             48.0% |
+| 90 - Belfort      |       1,358 |             48.9% |
+| **75 - Paris**    |   **9,920** |         **51.2%** |
+| 44 - Loire-Atl.   |       3,329 |             93.0% |
+| 91 - Essonne      |       3,000 |             93.2% |
+
+*(departments with ≥ 1,000 transactions)*
+
+Retention ranges from **46% to 93%** — a 47-point spread. Both tails are
+legitimate market segments, not data errors: cheap rural stock at one end, central
+Paris at the other. The effect is visible in the national mix — **Paris falls from
+8.03% of transactions to 5.14%**, a 36% relative under-representation of the single
+most-studied market in the dataset.
+
+**Alternative tested.** Clipping p10–p90 *within each department* holds retention at
+80% everywhere by construction, for a near-identical national dataset: 379,791 rows
+instead of 379,890 (−99), national median 3,417 €/m² instead of 3,443 (−0.8%). Same
+volume, same headline figure, no spatial distortion.
+
+The global filter is kept here because the report's central claim — the median is
+stable while the mean deflates from 17,973 to 3,955 €/m² — is unaffected by the
+choice. **Any department-level reading of the core market should use the per-department
+variant instead**; the clustering and Random Forest sections inherit this bias.
+
 ---
 
 ## Limitations
@@ -170,6 +221,9 @@ computed on the enriched core market dataset.
 - Single-year scope (2025) — no inter-annual comparison available
 - Geocoding at postal code level — not individual address
 - Correlations computed on Spearman rank — linear relationships only
+- The p10–p90 core-market filter is global, so it under-samples both the cheapest
+  departments and Paris (46%–93% retention depending on the department — see
+  *Known bias of the p10–p90 filter*)
 
 ---
 

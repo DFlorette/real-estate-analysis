@@ -71,8 +71,6 @@ def get_stats():
 ##
 @app.get("/prices/cities", summary="Median price/m² by city", tags=["Prices"])
 def prices_by_city(
-        limit: int = Query(default=10000, ge=1, le=50000),
-        offset: int = Query(default=0, ge=0),
         top_n: int = Query(default=10, ge=1, le=100),
         min_transactions: int = Query(default=100, ge=1),
 ):
@@ -87,8 +85,7 @@ def prices_by_city(
         .sort_values(ascending=False)
         .head(top_n)
         .reset_index()
-        .rename(columns={"Commune": "city", "median_price_m2": "median_price_m2"})
-        .iloc[offset:offset + limit]
+        .rename(columns={"Commune": "city"})
         .to_dict(orient="records")
     )
 
