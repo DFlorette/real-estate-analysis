@@ -55,22 +55,27 @@ Features predicting price/m² : 20 socio-economic + geographic variables,
 excluding surface and property value (data leakage).
 
 `RandomForestRegressor(n_estimators=100, random_state=42)`, 80/20 split on the
-335,842 rows with complete features (44,048 dropped for missing values).
+376,845 rows with complete features (3,045 dropped for missing values).
 
-**Hold-out performance : R² = 0.523, MAE = 867 €/m².**
+**Hold-out performance : R² = 0.607, MAE = 890 €/m².**
 
-| Feature                | Importance | Interpretation                          |
-|------------------------|------------|-----------------------------------------|
-| SL (avg salary)        | 22.4%      | High-wage areas have higher prices      |
-| MED_SL (median income) | 19.8%      | Local wealth is the primary driver      |
-| Longitude              | 13.8%      | East/West position — see caveat below   |
-| Nombre pieces principales | 9.2%    | Small units sell at a higher price/m²   |
-| Latitude               | 5.9%       | North/South position                    |
-| LOG (housing stock)    | 4.5%       | Urban density proxy                     |
+| Feature                   | Importance | Interpretation                          |
+|---------------------------|------------|-----------------------------------------|
+| MED_SL (median income)    | 47.2%      | Local wealth is the primary driver      |
+| Longitude                 | 9.2%       | East/West position — see caveat below   |
+| NB_EMPLT (local jobs)     | 6.5%       | Employment hubs price higher            |
+| Nombre pieces principales | 6.5%       | Small units sell at a higher price/m²   |
+| LOG (housing stock)       | 5.8%       | Urban density proxy                     |
+| Latitude                  | 4.9%       | North/South position                    |
+| SL (avg salary)           | 4.1%       | Largely redundant with MED_SL           |
 
-> **Income (SL + MED_SL) carries 42% of the model's total importance**, and the two
-> coordinates another 20% — location contributes on top of local wealth rather than
-> merely restating it.
+> **Median income alone carries 47% of the model's total importance** (51% with
+> average salary), and the two coordinates another 14% — location contributes on
+> top of local wealth rather than merely restating it.
+
+**Caveat on the income split.** `MED_SL` and `SL` measure close things, so the
+forest leans on whichever splits best and the other gets little credit. Read the
+51% as the weight of *income*, not as a ranking between the two indicators.
 
 **Caveat on the coordinates.** Neither correlates linearly with price (Spearman
 ρ = 0.05 for longitude, 0.08 for latitude). Their weight comes from the trees
@@ -78,9 +83,16 @@ partitioning space into local markets, not from a national North/South or
 East/West price gradient — the importance says *"which market"*, not *"which direction"*.
 
 **Caveat on importance.** Gini importance ranks features within this model; it is
-not variance explained. The model accounts for 52% of the variance in price/m²
-(R² above), so nearly half remains driven by property-level characteristics absent
+not variance explained. The model accounts for 61% of the variance in price/m²
+(R² above), so about 40% remains driven by property-level characteristics absent
 from the dataset — condition, floor, exact street, DPE.
+
+> **Revision note.** An earlier version of this section reported R² = 0.523 and
+> income at 42% of the importance. That run silently lacked socio-economic data for
+> every transaction in Paris, Lyon and Marseille (DVF codes them by arrondissement,
+> INSEE by city) and in the overseas departments — 11.5% of the core market, and
+> its most expensive part. With those rows joined, the model explains more and
+> leans harder on income.
 
 ---
 
@@ -95,36 +107,54 @@ socio-economic heterogeneity of the French market.
 
 | Cluster              | Transactions | %      | Median €/m² | vs France |
 |----------------------|--------------|--------|-------------|-----------|
-| Deprived Areas       | 91,360       | 24.0%  | ~2,661      | -22.70%   |
+| Deprived Areas       | 110,601      | 29.1%  | ~2,727      | -20.78%   |
 | Outliers             | 78,688       | 20.7%  | ~2,766      | -19.66%   |
-| Exceptions           | 47,951       | 12.6%  | ~6,986      | +102.91%  |
-| Affluent Urban       | 41,498       | 10.9%  | ~4,730      | +37.39%   |
-| Premium              | 39,080       | 10.3%  | ~3,784      | +9.91%    |
-| Countryside          | 34,922       | 9.2%   | ~3,558      | +3.34%    |
-| Economically Fragile | 24,155       | 6.4%   | ~2,790      | -18.96%   |
-| Intermediate Areas   | 22,236       | 5.9%   | ~3,743      | +8.73%    |
+| Affluent Urban       | 61,817       | 16.3%  | ~4,659      | +35.34%   |
+| Exceptions           | 46,025       | 12.1%  | ~7,084      | +105.78%  |
+| Countryside          | 32,188       | 8.5%   | ~3,647      | +5.93%    |
+| Economically Fragile | 27,652       | 7.3%   | ~3,012      | -12.51%   |
+| Premium              | 12,679       | 3.3%   | ~3,692      | +7.25%    |
+| Intermediate Areas   | 10,240       | 2.7%   | ~3,658      | +6.25%    |
 
 **Cluster profiles:**
 
 | Cluster              | Price/m² | Price | Surface | Unemployment | Income |
 |----------------------|:--------:|:-----:|:-------:|:------------:|:------:|
-| Deprived Areas       |    -     |   -   |    +    |      -       |   -    |
-| Economically Fragile |    -     |  --   |    -    |      ++      |   -    |
-| Intermediate Areas   |    +     |   +   |    +    |      +       |   +    |
-| Countryside          |    +     |   +   |    +    |      +       |   +    |
-| Premium              |    +     |   +   |    -    |      +       |   -    |
-| Affluent Urban       |    ++    |  ++   |    -    |      -       |   +    |
-| Exceptions           |   +++    |  +++  |    +    |      =       |   ++   |
-| Outliers             |    -     |   -   |    +    |      -       |   +    |
+| Deprived Areas       |    -     |   -   |    =    |      =       |   -    |
+| Economically Fragile |    -     |   -   |    -    |      ++      |   -    |
+| Intermediate Areas   |    +     |   =   |    =    |      =       |   +    |
+| Countryside          |    +     |   +   |    =    |      =       |   +    |
+| Premium              |    +     |   +   |    +    |      ++      |   -    |
+| Affluent Urban       |    ++    |  ++   |    =    |      =       |   +    |
+| Exceptions           |   +++    |  +++  |    -    |      =       |   ++   |
+| Outliers             |    -     |   -   |    +    |      =       |   =    |
 
-*`+/-` ≈ ±25% vs national median — `++/--` ≈ ±50% — `+++` ≈ +100%*
+*Cluster median vs national median — `=` within ±5% — `+/-` 5–25% — `++/--`
+25–75% — `+++` above +75%*
 
-**Geographic patterns:**
-- Exceptions : Paris, Côte d'Azur, Geneva border, Arcachon, Basque Coast
-- Premium : City centres of all major French cities (except Paris)
-- Affluent Urban : Western Paris suburbs (92), Lyon west, Bordeaux Métropole
-- Countryside : Periurban ring around major cities ("rurban" migration)
-- Economically Fragile : Former industrial basins (Lorraine, Ardennes)
+**Geographic patterns** (departments and communes with the most transactions):
+- Exceptions : Paris and its inner ring (92, 94, 93, 78), Swiss border (Ain, Doubs)
+- Affluent Urban : Côte d'Azur (Nice, Cannes, Antibes), Bordeaux, Aix-en-Provence,
+  central Lyon, Annecy, La Rochelle
+- Premium : the Marseille arrondissements and Lyon 6e — see the caveat below
+- Countryside : Var coast (Fréjus, Saint-Raphaël), outer Paris ring (95, 91, 78),
+  Genevois (74)
+- Economically Fragile : Mediterranean Languedoc (Montpellier, Nîmes, Agde,
+  Perpignan, Béziers), Avignon, La Réunion
+- Deprived Areas : large regional cities — Toulouse, Toulon, Dijon, Lille, Rennes,
+  Grenoble, Reims, Brest, Rouen
+
+The names are relative: they rank the 273 zones against each other, so a city
+labelled *Deprived Areas* is below the other zones on the naming criteria, not
+deprived in absolute terms. A large city can also span several zones — Toulouse
+appears under both *Deprived Areas* and *Intermediate Areas*.
+
+**Caveat on Premium.** INSEE publishes Paris, Lyon and Marseille only as whole
+cities, so every arrondissement inherits city-wide figures — including stock
+counts (housing, jobs, doctors, schools) that are city totals. Those inflated
+counts push the Marseille arrondissements over the *Premium* threshold, which sums
+all normalised indicators. The label reflects the size of the city, not a premium
+market: its income is 10% below the national median and its unemployment 33% above.
 
 ---
 
@@ -135,12 +165,21 @@ Analysis of the price/m² vs median income scatter by postal code reveals three 
 | Mechanism              | Example cities                       | Driver           |
 |------------------------|--------------------------------------|------------------|
 | Demographic tension    | Nantes, Toulouse, Rennes, Lille      | Supply < demand  |
-| Tourism / second homes | Ajaccio, Fréjus, Corsica             | External buyers  |
+| Tourism / second homes | Ajaccio, Fréjus, Corsica, La Réunion (Saint-Paul, Saint-Leu) | External buyers  |
 | Periurban overspill    | Cergy, Pierrelaye, Villeneuve-d'Ascq | Proximity to hub |
 
-> High income areas **always** translate into high prices (bottom-right quadrant is empty). 
-> The reverse is not true — confirming that wealth is necessary but not sufficient: supply 
-> tension and external demand act as independent price amplifiers.
+La Réunion appears here only since the overseas departments were joined to the
+INSEE data; it was absent from earlier versions of this report.
+
+> High income almost always translates into high prices; the reverse is not true —
+> wealth is close to necessary but not sufficient: supply tension and external
+> demand act as independent price amplifiers.
+>
+> The one systematic exception is the **Swiss border**. Of the 39 zones whose
+> median income exceeds 1.5× the national figure while prices stay below the
+> national median, 82% sit in the Doubs, the Jura or Haute-Savoie — consistent with
+> residents earning Swiss salaries in markets priced locally. An earlier version of
+> this report described that quadrant as empty; it is not.
 
 ---
 
@@ -151,14 +190,15 @@ computed on the enriched core market dataset.
 
 | Feature                | Correlation | Interpretation                          |
 |------------------------|-------------|-----------------------------------------|
-| MED_SL (median income) | **+0.395**  | Stronger local wealth → higher prices   |
-| SL (average salary)    | **+0.250**  | High-wage employment zones drive prices |
-| CHOMAGE (unemployment) | **-0.060**  | Weak negative signal                    |
-| PR_MD60 (poverty rate) | **+0.005**  | No significant linear relationship      |
+| MED_SL (median income) | **+0.454**  | Stronger local wealth → higher prices   |
+| SL (average salary)    | **+0.340**  | High-wage employment zones drive prices |
+| CHOMAGE (unemployment) | **-0.048**  | Weak negative signal                    |
+| PR_MD60 (poverty rate) | **+0.062**  | No usable relationship                  |
 
-> **Note :** correlations are weaker than in the raw feature analysis notebook
-> (MED_SL : 0.52 → 0.395) because the enriched dataset includes a broader
-> geographic scope and different outlier composition after pipeline processing.
+> **Note :** an earlier version reported MED_SL at +0.395 and SL at +0.250. The gap
+> came from the missing Paris, Lyon, Marseille and overseas rows (see the revision
+> note in section 2): dropping the most expensive markets weakened the link between
+> income and price.
 
 ---
 
@@ -167,23 +207,24 @@ computed on the enriched core market dataset.
 Four decisions the analysis actually supports.
 
 **1. Screen on income, and drop the deprivation indicators.**
-Median income is the single best predictor available here (ρ = 0.395, 20% of the
-model's importance), and average salary follows (ρ = 0.250, 22%). Unemployment
-(ρ = −0.060) and the poverty rate (ρ = +0.005) carry no usable signal — a scoring
+Median income is the single best predictor available here (ρ = 0.454, 47% of the
+model's importance); average salary adds little on top of it (ρ = 0.340, 4%).
+Unemployment (ρ = −0.048) and the poverty rate (ρ = +0.062) carry no usable signal — a scoring
 model can drop both at no cost and gain two fewer joins to maintain. Rank
 candidate areas on `MED_SL` and `SL`; ignore `CHOMAGE` and `PR_MD60`.
 
 **2. Look for opportunities in the top-left quadrant, and treat its three
 mechanisms differently.**
-High income always produces high prices — the bottom-right quadrant is empty — so
-wealthy areas hold no mispricing. The exploitable cases are the ones priced above
+High income almost always produces high prices, so wealthy areas hold little
+mispricing — the Swiss border, where residents likely earn Swiss salaries, is the one
+systematic exception. The exploitable cases are the ones priced above
 what local income explains, and their drivers do not carry the same risk:
 
 | Mechanism | Cities | What it depends on | Durability |
 |---|---|---|---|
 | Demographic tension | Nantes, Toulouse, Rennes, Lille | Structural supply shortfall | Most durable — supply moves slowly |
 | Periurban overspill | Cergy, Pierrelaye, Villeneuve-d'Ascq | The transport link to the hub | Checkable — verify the link before buying |
-| Tourism / second homes | Ajaccio, Fréjus, Corsica | External, non-resident demand | Most fragile — exposed to a demand shock |
+| Tourism / second homes | Ajaccio, Fréjus, Corsica, La Réunion | External, non-resident demand | Most fragile — exposed to a demand shock |
 
 **3. Time the transaction for competition, not for price.**
 Volume swings 75% across the year (23,403 transactions in August against 40,953
@@ -192,15 +233,15 @@ room against fewer competing offers — it does not buy a discount. Anyone
 expecting a seasonal price dip should stop waiting for one.
 
 **4. Benchmark against the cluster, not against France.**
-Cluster medians run from −22.7% (Deprived Areas) to +102.9% (Exceptions) around
+Cluster medians run from −20.8% (Deprived Areas) to +105.8% (Exceptions) around
 the national figure. A property compared to the €3,443/m² national median is
 compared to almost nothing; compared to its cluster median it is compared to
 similar markets. This is what the clustering is *for*.
 
 ### What this analysis cannot tell you
 
-- **It does not price a property.** The model explains 52% of the variance in
-  price/m² (R² = 0.523, MAE 867 €/m²). The rest sits in attributes absent from
+- **It does not price a property.** The model explains 61% of the variance in
+  price/m² (R² = 0.607, MAE 890 €/m²). The rest sits in attributes absent from
   DVF — condition, floor, DPE, exact street. Use it to rank markets, not to
   value an address.
 - **It shows association, not causation.** Nothing here establishes that raising
@@ -268,6 +309,11 @@ variant instead**; the clustering and Random Forest sections inherit this bias.
 
 - DVF excludes off-plan sales (VEFA) and inheritances
 - Data unavailable for Alsace-Moselle and Mayotte
+- INSEE publishes no median standard of living for Guadeloupe, Martinique and
+  Guyane, so their 2,327 transactions carry no `MED_SL` (0.6% of the core market)
+- Paris, Lyon and Marseille are joined to INSEE at city level: every arrondissement
+  shares the same income and stock figures, so within-city variation is invisible
+  to the socio-economic features (see *Caveat on Premium*)
 - Prices do not account for property condition, floor level, or renovation state
 - The Amiens €69M transaction (multi-lot sale) illustrates per-lot price/m²
   calculation limits on bundled sales

@@ -14,7 +14,7 @@ employment zone levels.
 
 - **Median price/m²** : €3,443 nationally (core market)  
 - **Most expensive city** : Neuilly-sur-Seine at €8,988/m² (472 transactions)  
-- **Primary price drivers** : local income (SL + MED_SL = 42% RF importance) and geography (lat/lon = 20%)  
+- **Primary price drivers** : local income (MED_SL = 47% RF importance, 51% with SL) and geography (lat/lon = 14%) — R² = 0.61  
 - **273 real estate clusters** identified via HDBSCAN — from Deprived Areas to Exceptions  
 - **Income decoupling** : tourist cities (Ajaccio, Fréjus) and periurban zones (Cergy, Pierrelaye) show high prices despite modest local income  
 - **Seasonality** : volume varies up to 75% across months — prices remain stable (~6%)  
@@ -25,6 +25,10 @@ employment zone levels.
 
 Three linked report pages built on the enriched dataset — source file:
 [`reports/real_estate_dashboard.pbix`](reports/real_estate_dashboard.pbix).
+
+> The dashboard and the figures below predate the fix that joined Paris, Lyon,
+> Marseille and the overseas departments to the INSEE data, so their cluster
+> breakdown differs from [`reports/summary.md`](reports/summary.md), which is current.
 
 ### 1 — National view
 
