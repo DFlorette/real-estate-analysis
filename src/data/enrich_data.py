@@ -81,14 +81,29 @@ def build_ref_commune(
 ###
 # BUILD GEO CODE
 ###
+# DVF records Paris, Lyon and Marseille by municipal arrondissement, while the
+# INSEE commune-level exports only carry the city itself.
+ARRONDISSEMENT_TO_COMMUNE = {
+    **{f"751{i:02d}": "75056" for i in range(1, 21)},   # Paris 1er-20e
+    **{f"6938{i}": "69123" for i in range(1, 10)},      # Lyon 1er-9e
+    **{f"132{i:02d}": "13055" for i in range(1, 17)},   # Marseille 1er-16e
+}
+
+
 def build_geo_code(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Concatenate Département + CODGEO → 5-digit geo code.
-    e.g. '75' + '056' → '75056'
+    Concatenate Département + Code commune → 5-digit INSEE code (CODGEO).
+    e.g. '44' + '109' → '44109', '2A' + '4' → '2A004'
+
+    Overseas departments have a 3-character code, so the commune part keeps
+    2 digits: '971' + '1' → '97101'. Arrondissements are folded into their
+    city: '75' + '116' → '75116' → '75056'.
     """
     dept = df["Code departement"].astype(str).str.zfill(2)
-    commune = df["Code commune"].astype(str).str.zfill(3)
-    df["CODGEO"] = dept + commune
+    commune = df["Code commune"].astype(str)
+    commune = commune.where(dept.str.len() == 3, commune.str.zfill(3)).str.zfill(2)
+    codgeo = dept + commune
+    df["CODGEO"] = codgeo.replace(ARRONDISSEMENT_TO_COMMUNE)
     return df
 
 
