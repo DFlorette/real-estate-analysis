@@ -118,7 +118,9 @@ def run(config: dict, force: bool = False) -> None:
     # CORE MARKET
     ##
     print("Filtering core market...")
-    df_dvf_core = get_core_market(df_dvf)
+    # Per-department band: a national one keeps only 5% of Paris sales once
+    # houses are in the data. See reports/summary.md, "Core market filter".
+    df_dvf_core = get_core_market(df_dvf, by="Code departement")
     write_parquet(df_dvf_core, paths["core_data"])
     print(f"  {len(df_dvf):,} cleaned rows -> {len(df_dvf_core):,} core market rows "
           f"({len(df_dvf_core) / len(df_dvf):.1%})")

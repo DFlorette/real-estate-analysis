@@ -1,6 +1,46 @@
 import numpy as np
 import pandas as pd
 
+HOUSING_TYPES = ["Maison", "Appartement"]
+
+# DVF has no usable sale identifier: these columns together identify one sale.
+MUTATION_KEY = [
+    "Date mutation", "Nature mutation", "Valeur fonciere",
+    "Code departement", "Code commune", "No disposition",
+]
+
+# A built unit is repeated once per land-use line of its parcel.
+UNIT_KEY = MUTATION_KEY + [
+    "Section", "No plan", "1er lot",
+    "Code type local", "Surface reelle bati", "Nombre pieces principales",
+]
+
+
+def keep_single_housing_sales(df: pd.DataFrame) -> pd.DataFrame:
+    """One row per sale of exactly one house or flat.
+
+    DVF has one row per unit and per land-use line, and every row repeats the
+    total value of the sale. Dividing that value by the surface of one row
+    overstates the price of any sale bundling several units. Units are first
+    deduplicated, then a sale is kept only if it holds a single dwelling:
+    outbuildings (Dépendance) carry no living area and are allowed, while sales
+    of several dwellings or of a dwelling with a commercial unit are dropped,
+    since their value cannot be split between units.
+    """
+    units = df[df["Type local"].notna()].drop_duplicates(UNIT_KEY)
+
+    is_housing = units["Type local"].isin(HOUSING_TYPES)
+    is_other = ~is_housing & (units["Type local"] != "Dépendance")
+
+    sale_id = units.groupby(MUTATION_KEY, dropna=False, observed=True, sort=False).ngroup()
+    counts = (
+        pd.DataFrame({"housing": is_housing, "other": is_other})
+        .groupby(sale_id)
+        .transform("sum")
+    )
+
+    return units[is_housing & (counts["housing"] == 1) & (counts["other"] == 0)]
+
 
 def clean_dvf(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
@@ -20,8 +60,7 @@ def clean_dvf(df: pd.DataFrame) -> pd.DataFrame:
 
     # Str
     for col in ["Type de voie", "Code voie", "Voie", "Code postal",
-                "Code departement", "Section",
-                "Nature culture", "Nature culture speciale"]:
+                "Code departement", "Section", "1er lot"]:
         if col in df.columns:
             df = clean_str_col(df, col)
 
@@ -29,20 +68,20 @@ def clean_dvf(df: pd.DataFrame) -> pd.DataFrame:
     df["Date mutation"] = pd.to_datetime(df["Date mutation"], format="%d/%m/%Y")
 
     ##
-    # FILTER : bâti only (exclude agricultural land)
+    # FILTER : market sales of a single dwelling
     ##
-    for col in ["Nature culture", "Nature culture speciale"]:
-        if col in df.columns:
-            df = df[df[col].fillna("") == ""]
-            df = df.drop(columns=[col])
+    # Exchanges, auctions, expropriations and off-plan sales (VEFA) do not
+    # follow open-market prices.
+    df = df[df["Nature mutation"] == "Vente"]
+    df = df.dropna(subset=["Valeur fonciere"])
 
-    if "Surface terrain" in df.columns:
-        df = df.drop(columns=["Surface terrain"])
+    df = keep_single_housing_sales(df)
+    df = df.drop(columns=["No disposition", "1er lot"], errors="ignore")
 
     ##
     # HANDLE MISSING / CRITICAL VALUES
     ##
-    df = df.dropna(subset=["Valeur fonciere", "Code postal"])
+    df = df.dropna(subset=["Code postal"])
     df = df[
         df["Surface reelle bati"].notna() &
         (df["Surface reelle bati"] >= 1)
@@ -62,7 +101,7 @@ def clean_dvf(df: pd.DataFrame) -> pd.DataFrame:
     ##
     # CLEAN UP CATEGORY
     ##
-    for col in ["Type local", "Commune"]:
+    for col in ["Nature mutation", "Type local", "Commune"]:
         if col in df.columns:
             df[col] = df[col].cat.remove_unused_categories()
 

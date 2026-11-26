@@ -1,6 +1,7 @@
 import pandas as pd
 
 dvf_cols = [
+    "No disposition",
     "Date mutation",
     "Nature mutation",
     "Valeur fonciere",
@@ -14,13 +15,11 @@ dvf_cols = [
     "Code commune",
     "Section",
     "No plan",
+    "1er lot",
     "Code type local",
     "Type local",
     "Surface reelle bati",
     "Nombre pieces principales",
-    "Surface terrain",
-    "Nature culture",
-    "Nature culture speciale"
 ]
 
 dvf_dtype_map = {
@@ -30,8 +29,7 @@ dvf_dtype_map = {
     "Type local": "category",
     "Type de voie": "category",
     "Commune": "category",
-    "Nature culture": "str",
-    "Nature culture speciale": "str",
+    "1er lot": "str",
 }
 
 
