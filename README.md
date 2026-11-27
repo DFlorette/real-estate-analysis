@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Exploratory analysis of the French real estate market using official DVF
-(Demandes de Valeurs Foncières) 2025 data — 465,000+ transactions enriched
+(Demandes de Valeurs Foncières) 2025 data — 800,000+ house and flat sales enriched
 with INSEE socio-economic indicators at commune, intercommunal, and
 employment zone levels.
 
@@ -12,12 +12,12 @@ employment zone levels.
 
 ## Key Findings
 
-- **Median price/m²** : €3,443 nationally (core market)  
-- **Most expensive city** : Neuilly-sur-Seine at €8,988/m² (472 transactions)  
-- **Primary price drivers** : local income (MED_SL = 47% RF importance, 51% with SL) and geography (lat/lon = 14%) — R² = 0.61  
-- **273 real estate clusters** identified via HDBSCAN — from Deprived Areas to Exceptions  
+- **Median price/m²** : €2,573 nationally (core market) — houses €2,188, flats €3,250  
+- **Most expensive city** : Paris 6e at €12,109/m² (325 sales)  
+- **Primary price drivers** : town size and amenities (58% RF importance), then income (SL + MED_SL = 22%) and geography (lat/lon = 15%) — R² = 0.77 on unseen communes  
+- **395 real estate clusters** identified via HDBSCAN — from Deprived Areas to Exceptions; rural France is mostly left unclustered  
 - **Income decoupling** : tourist cities (Ajaccio, Fréjus) and periurban zones (Cergy, Pierrelaye) show high prices despite modest local income  
-- **Seasonality** : volume varies up to 75% across months — prices remain stable (~6%)  
+- **Seasonality** : volume varies up to 68% across months — prices remain stable (~5%)  
 
 ---
 
@@ -26,9 +26,10 @@ employment zone levels.
 Three linked report pages built on the enriched dataset — source file:
 [`reports/real_estate_dashboard.pbix`](reports/real_estate_dashboard.pbix).
 
-> The dashboard and the figures below predate the fix that joined Paris, Lyon,
-> Marseille and the overseas departments to the INSEE data, so their cluster
-> breakdown differs from [`reports/summary.md`](reports/summary.md), which is current.
+> The dashboard and the figures below predate two corrections — joining Paris,
+> Lyon, Marseille and the overseas departments to the INSEE data, and rebuilding
+> the dataset as one row per single-dwelling sale, houses included — so their
+> figures differ from [`reports/summary.md`](reports/summary.md), which is current.
 
 ### 1 — National view
 
@@ -81,17 +82,19 @@ real-estate-analysis/
 ├── src/
 │   ├── data/
 │   │   ├── load_data.py            # Readers for DVF and the 4 INSEE files
-│   │   ├── clean_data.py           # Typing, filtering, prix_m2
+│   │   ├── clean_data.py           # Typing, single-dwelling sales, prix_m2
 │   │   ├── geocoder.py             # API Géo + JSON cache (rate-limited)
 │   │   └── enrich_data.py          # ref_commune + join onto DVF
 │   ├── analysis/
-│   │   ├── metrics.py              # Core market filter (p10–p90)
+│   │   ├── metrics.py              # Core market filter (p10–p90, per department)
 │   │   └── clustering.py           # HDBSCAN + cluster naming
 │   └── features/
 │       └── build_features.py       # Feature engineering and renaming
 ├── api/
 │   └── app.py                      # REST API (FastAPI) — 18 endpoints
 ├── tests/
+│   ├── test_clean.py               # Sale reconstruction and price/m²
+│   ├── test_enrich.py              # INSEE geo codes (arrondissements, overseas)
 │   ├── test_geocode.py             # Geocoding and cache behaviour
 │   └── test_metrics.py             # Core market filter
 ├── reports/
@@ -135,12 +138,12 @@ real-estate-analysis/
 | Property              | Value                                        |
 |-----------------------|----------------------------------------------|
 | Source                | data.gouv.fr — DVF 2025                      |
-| Raw file rows         | 3,714,829                                    |
-| After cleaning (built properties only) | 474,723                     |
-| Core market (p10–p90) | 379,890 — 80.0% of cleaned rows              |
-| Enriched dataset      | 379,890 — 42 variables                       |
-| DVF variables loaded  | 18 (of ~43 available)                        |
-| Memory                | 17 MB on disk (Parquet) — 150 MB in RAM      |
+| Raw file rows         | 3,714,829 (1,329,649 sales)                  |
+| After cleaning (single-dwelling market sales) | 805,167 — 456,574 houses, 348,593 flats |
+| Core market (p10–p90 per department) | 644,255 — 80.0% of cleaned sales |
+| Enriched dataset      | 644,255 — 42 variables                       |
+| DVF variables loaded  | 19 (of ~43 available)                        |
+| Memory                | 34 MB on disk (Parquet)                      |
 | License               | Licence Ouverte / Open Licence v2.0 (Etalab) |
 
 **External sources (INSEE) :**
@@ -180,8 +183,9 @@ the indicators to tick on the INSEE export screen. Place all five in `data/raw/`
 python run_pipeline.py
 ```
 
-> The first run geocodes the 10,024 distinct postal-code/commune pairs against
-> the Géoplateforme API at 5 calls/second — roughly 35 minutes. Subsequent runs
+> The first run geocodes the 29,516 distinct postal-code/commune pairs against
+> the Géoplateforme API. Calls are capped at 5/second but issued one at a time,
+> and each takes about 0.8 s, so a cold start runs for several hours. Subsequent runs
 > read `data/cache/geocode_cache.json` and issue no requests.
 
 ### 4 — Explore the notebooks

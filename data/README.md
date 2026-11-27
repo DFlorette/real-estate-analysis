@@ -78,12 +78,13 @@ why every loader passes `header=2`. Rename each export to the file name given.
 | `raw/Stats_Commune.csv` | CSV `;` | ~2.3 MB |
 | `raw/Stats_Interco.csv` | CSV `;` | ~83 KB |
 | `raw/Stats_Chomage.csv` | CSV `;` | ~7 KB |
-| `clean/dvf_clean.parquet` | Parquet | ~11 MB |
-| `processed/dvf_processed.parquet` | Parquet | ~17 MB |
+| `clean/dvf_clean.parquet` | Parquet | ~23 MB |
+| `processed/dvf_processed.parquet` | Parquet | ~34 MB |
 
 ## First run
 
-The first run geocodes every distinct postal code against the
-[Géoplateforme](https://data.geopf.fr/geocodage/search) API, rate-limited to 5
-calls/second, and writes `cache/geocode_cache.json` as it goes. Later runs read
-the cache and issue no requests. Budget for that on a cold start.
+The first run geocodes every distinct postal-code/commune pair (29,516) against
+the [Géoplateforme](https://data.geopf.fr/geocodage/search) API, rate-limited to
+5 calls/second, and writes `cache/geocode_cache.json` as it goes. Calls are
+issued one at a time and each takes about 0.8 s, so budget several hours on a cold
+start. Later runs read the cache and issue no requests.
